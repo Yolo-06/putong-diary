@@ -482,6 +482,200 @@ body {
 .modal-box p { font-size: 14px; color: var(--text-secondary); margin-bottom: 18px; }
 .modal-box .modal-btns { display: flex; gap: 10px; justify-content: center; }
 
+/* ========== 设置页面 ========== */
+.cat-major-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.cat-major-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  cursor: pointer;
+  gap: 10px;
+  transition: background 0.15s;
+}
+
+.cat-major-header:hover { background: #F8FAFC; }
+
+.cat-major-header .lock-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.cat-major-header .cat-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cat-major-header .cat-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.cat-major-header .cat-arrow {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.cat-major-header.expanded .cat-arrow {
+  transform: rotate(90deg);
+}
+
+.cat-major-header .cat-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.cat-major-header .btn-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.btn-icon-edit { background: var(--primary-light); color: var(--primary); }
+.btn-icon-edit:hover { background: #E0E7FF; }
+.btn-icon-del { background: var(--danger-light); color: var(--danger); }
+.btn-icon-del:hover { background: #FEE2E2; }
+
+.cat-subs {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 8px 16px 12px;
+  background: #FAFBFC;
+}
+
+.cat-subs.show { display: block; }
+
+.cat-sub-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  gap: 8px;
+  transition: background 0.15s;
+}
+
+.cat-sub-item:hover { background: #F1F5F9; }
+
+.cat-sub-item .sub-lock {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.cat-sub-item .sub-name {
+  flex: 1;
+  font-size: 14px;
+}
+
+.add-sub-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+  width: 100%;
+  font-family: inherit;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.add-sub-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.btn-add-major {
+  width: 100%;
+  padding: 14px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 6px;
+  transition: all 0.2s;
+}
+
+.btn-add-major:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* 分类弹窗 */
+.cat-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  animation: fadeIn 0.2s ease;
+}
+
+.cat-modal-box {
+  background: white;
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 340px;
+  max-width: 90vw;
+  box-shadow: var(--shadow-lg);
+}
+
+.cat-modal-box h3 { margin-bottom: 16px; font-size: 17px; }
+
+.cat-modal-box .form-group { margin-bottom: 12px; }
+
+.cat-modal-box .modal-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.cat-modal-box .color-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cat-modal-box .color-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.15s;
+}
+
+.cat-modal-box .color-dot.selected {
+  border-color: var(--text);
+  transform: scale(1.15);
+}
+
 /* ========== 响应式 ========== */
 @media (max-width: 480px) {
   .app { max-width: 100%; }
@@ -560,6 +754,15 @@ body {
     <div id="statsContent"></div>
   </div>
 
+  <!-- 设置 -->
+  <div class="page" id="page-settings">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <span style="font-size:16px;font-weight:700;">⚙️ 分类管理</span>
+      <button class="btn btn-sm" style="background:var(--primary);color:white;" onclick="showAddMajorModal()">+ 新增大类</button>
+    </div>
+    <div id="settingsCatList"></div>
+  </div>
+
   <!-- 底部导航 -->
   <div class="tab-bar">
     <button class="tab-item active" data-page="add" onclick="switchPage('add')">
@@ -570,6 +773,9 @@ body {
     </button>
     <button class="tab-item" data-page="stats" onclick="switchPage('stats')">
       <span class="tab-icon">📊</span> 统计
+    </button>
+    <button class="tab-item" data-page="settings" onclick="switchPage('settings')">
+      <span class="tab-icon">⚙️</span> 设置
     </button>
   </div>
 </div>
@@ -586,11 +792,42 @@ body {
   </div>
 </div>
 
+<!-- 分类编辑弹窗 -->
+<div class="cat-modal-overlay" id="catModal" style="display:none;">
+  <div class="cat-modal-box">
+    <h3 id="catModalTitle">分类操作</h3>
+    <div class="form-group">
+      <label class="form-label">名称</label>
+      <input type="text" class="form-input" id="catModalInput" placeholder="输入分类名称" maxlength="20">
+    </div>
+    <div class="form-group" id="catModalColorGroup" style="display:none;">
+      <label class="form-label">选择颜色</label>
+      <div class="color-picker" id="catModalColors"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-sm btn-outline" onclick="closeCatModal()">取消</button>
+      <button class="btn btn-sm" style="background:var(--primary);color:white;" id="catModalConfirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 分类删除确认弹窗 -->
+<div class="cat-modal-overlay" id="catDeleteModal" style="display:none;">
+  <div class="cat-modal-box" style="text-align:center;">
+    <h3>⚠️ 确认删除</h3>
+    <p id="catDeleteMsg">确定要删除该分类吗？删除后无法恢复。</p>
+    <div class="modal-btns">
+      <button class="btn btn-sm btn-outline" onclick="closeCatDeleteModal()">取消</button>
+      <button class="btn btn-sm btn-danger" id="catDeleteConfirm">确认删除</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ==================== 数据层 ====================
 
-// 分类定义
-var categories = {
+// 预置分类（不可修改）
+var presetCategories = {
   '🍽️ 餐饮饮食': ['早餐', '午餐', '晚餐', '零食饮料', '外卖', '聚餐聚会'],
   '🚗 交通出行': ['公交地铁', '出租车/网约车', '加油充电', '停车费', '火车/飞机'],
   '🛒 购物消费': ['日常百货', '数码产品', '家居用品', '个护美妆'],
@@ -604,8 +841,8 @@ var categories = {
   '🔧 其他杂项': ['礼品红包', '宠物开销', '金融手续费', '其他']
 };
 
-// 颜色映射（给每个大类一个颜色）
-var catColors = {
+// 预置颜色表
+var presetCatColors = {
   '🍽️ 餐饮饮食': '#F97316',
   '🚗 交通出行': '#3B82F6',
   '🛒 购物消费': '#EC4899',
@@ -618,6 +855,67 @@ var catColors = {
   '💰 收入': '#10B981',
   '🔧 其他杂项': '#64748B'
 };
+
+// 用户可选颜色（创建大类时选择）
+var userColorOptions = [
+  '#F97316', '#3B82F6', '#EC4899', '#8B5CF6', '#06B6D4',
+  '#EF4444', '#6366F1', '#14B8A6', '#D946EF', '#10B981',
+  '#64748B', '#E11D48', '#CA8A04', '#9333EA', '#0891B2',
+  '#DC2626', '#7C3AED', '#2563EB', '#059669', '#D97706'
+];
+
+// 加载用户自定义分类
+function loadUserCategories() {
+  try {
+    var data = localStorage.getItem('jizhangben_usercats');
+    return data ? JSON.parse(data) : {};
+  } catch(e) {
+    return {};
+  }
+}
+
+// 保存用户自定义分类
+function saveUserCategories() {
+  localStorage.setItem('jizhangben_usercats', JSON.stringify(userCategories));
+}
+
+var userCategories = loadUserCategories();
+
+// 当前生效的分类（合并预置 + 用户自定义）
+var categories = {};
+
+// 当前生效的颜色表
+var catColors = {};
+
+// 重新合并分类
+function rebuildCategories() {
+  var merged = {};
+  var mergedColors = {};
+
+  // 先放入预置分类
+  for (var key in presetCategories) {
+    merged[key] = presetCategories[key].slice();
+    mergedColors[key] = presetCatColors[key];
+  }
+
+  // 合并用户自定义分类
+  for (var key in userCategories) {
+    var uc = userCategories[key];
+    if (merged[key]) {
+      // 给已有大类补充小类
+      merged[key] = merged[key].concat(uc.subs);
+    } else {
+      // 用户自建大类
+      merged[key] = uc.subs.slice();
+      mergedColors[key] = uc.color || '#6366F1';
+    }
+  }
+
+  categories = merged;
+  catColors = mergedColors;
+}
+
+rebuildCategories();
 
 // 从 localStorage 读取记录
 function loadRecords() {
@@ -639,6 +937,11 @@ var currentMonth = getCurrentMonth();   // 账单页的月份
 var statsMonth = getCurrentMonth();     // 统计页的月份
 var deleteTargetId = null;              // 待删除的记录ID
 
+// 设置页面状态
+var catModalMode = null;       // 'addMajor' | 'editMajor' | 'addSub' | 'editSub'
+var catModalTarget = null;     // 当前操作的目标信息
+var catDeleteTarget = null;    // 待删除的分类信息
+
 function getCurrentMonth() {
   var d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -657,16 +960,10 @@ function init() {
   document.getElementById('dateInput').value = formatDate(now);
 
   // 填充一级分类
-  var cat1Select = document.getElementById('cat1Select');
-  Object.keys(categories).forEach(function(cat) {
-    var opt = document.createElement('option');
-    opt.value = cat;
-    opt.textContent = cat;
-    cat1Select.appendChild(opt);
-  });
+  refreshCat1Select();
 
   // 一级分类切换时更新二级分类
-  cat1Select.addEventListener('change', function() {
+  document.getElementById('cat1Select').addEventListener('change', function() {
     updateCat2Options(this.value);
   });
 
@@ -676,6 +973,22 @@ function init() {
 
 function formatDate(d) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function refreshCat1Select() {
+  var cat1Select = document.getElementById('cat1Select');
+  var currentVal = cat1Select.value;
+  cat1Select.innerHTML = '<option value="">请选择分类</option>';
+  Object.keys(categories).forEach(function(cat) {
+    var opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    cat1Select.appendChild(opt);
+  });
+  // 恢复之前选中的值
+  if (currentVal && categories[currentVal]) {
+    cat1Select.value = currentVal;
+  }
 }
 
 function updateCat2Options(cat1) {
@@ -707,6 +1020,7 @@ function switchPage(pageName) {
   // 刷新对应页面
   if (pageName === 'list') refreshListPage();
   if (pageName === 'stats') refreshStatsPage();
+  if (pageName === 'settings') refreshSettingsPage();
 }
 
 // ==================== 记账功能 ====================
@@ -897,7 +1211,11 @@ document.getElementById('deleteModal').addEventListener('click', function(e) {
   if (e.target === this) closeDeleteModal();
 });
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeDeleteModal();
+  if (e.key === 'Escape') {
+    closeDeleteModal();
+    closeCatModal();
+    closeCatDeleteModal();
+  }
 });
 
 document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
@@ -1055,6 +1373,367 @@ function refreshAll() {
   refreshListPage();
   refreshStatsPage();
 }
+
+// ==================== 设置页面：分类管理 ====================
+
+// 判断某个大类是否是预置的
+function isPresetMajor(catName) {
+  return presetCategories.hasOwnProperty(catName);
+}
+
+// 获取用户添加的小类（在某个大类下）
+function getUserAddedSubs(catName) {
+  if (userCategories[catName]) {
+    return userCategories[catName].subs.slice();
+  }
+  return [];
+}
+
+// 获取预置小类（在某个大类下）
+function getPresetSubs(catName) {
+  if (presetCategories[catName]) {
+    return presetCategories[catName].slice();
+  }
+  return [];
+}
+
+// 刷新设置页面
+function refreshSettingsPage() {
+  var container = document.getElementById('settingsCatList');
+  var html = '';
+
+  Object.keys(categories).forEach(function(catName) {
+    var isPreset = isPresetMajor(catName);
+    var color = catColors[catName] || '#64748B';
+    var totalSubs = categories[catName].length;
+    var presetSubs = getPresetSubs(catName);
+    var userSubs = getUserAddedSubs(catName);
+
+    html += '<div class="cat-major-card">';
+    html += '<div class="cat-major-header" onclick="toggleCatExpand(this)" data-cat="' + escapeHtml(catName) + '">';
+
+    // 锁定图标
+    if (isPreset) {
+      html += '<span class="lock-icon" title="预置分类，不可删除">🔒</span>';
+    }
+
+    // 分类名称
+    html += '<span class="cat-name">' + catName + '</span>';
+    html += '<span class="cat-count">' + totalSubs + '个小类</span>';
+
+    // 操作按钮
+    if (!isPreset) {
+      // 用户自建大类：可编辑、可删除
+      html += '<span class="cat-actions" onclick="event.stopPropagation();">';
+      html += '<button class="btn-icon btn-icon-edit" onclick="showEditMajorModal(\'' + escapeHtml(catName) + '\')" title="编辑大类">✏️</button>';
+      html += '<button class="btn-icon btn-icon-del" onclick="showCatDeleteModal(\'major\',\'' + escapeHtml(catName) + '\',\'\')" title="删除大类">🗑</button>';
+      html += '</span>';
+    }
+
+    html += '<span class="cat-arrow">▶</span>';
+    html += '</div>';
+
+    // 小类列表
+    html += '<div class="cat-subs" id="subs-' + escapeHtml(catName).replace(/[^a-zA-Z0-9一-龥]/g, '_') + '">';
+
+    // 预置小类
+    presetSubs.forEach(function(sub) {
+      html += '<div class="cat-sub-item">';
+      html += '<span class="sub-lock">🔒</span>';
+      html += '<span class="sub-name">' + sub + '</span>';
+      html += '</div>';
+    });
+
+    // 用户添加的小类
+    userSubs.forEach(function(sub) {
+      html += '<div class="cat-sub-item">';
+      html += '<span class="sub-name">' + sub + '</span>';
+      html += '<span class="cat-actions">';
+      html += '<button class="btn-icon btn-icon-edit" onclick="event.stopPropagation();showEditSubModal(\'' + escapeHtml(catName) + '\',\'' + escapeHtml(sub) + '\')" title="编辑">✏️</button>';
+      html += '<button class="btn-icon btn-icon-del" onclick="event.stopPropagation();showCatDeleteModal(\'sub\',\'' + escapeHtml(catName) + '\',\'' + escapeHtml(sub) + '\')" title="删除">🗑</button>';
+      html += '</span>';
+      html += '</div>';
+    });
+
+    // 添加小类按钮
+    html += '<button class="add-sub-btn" onclick="event.stopPropagation();showAddSubModal(\'' + escapeHtml(catName) + '\')">+ 添加小类</button>';
+
+    html += '</div>';
+    html += '</div>';
+  });
+
+  // 新增自定义大类按钮
+  html += '<button class="btn-add-major" onclick="showAddMajorModal()">+ 新建自定义大类</button>';
+
+  container.innerHTML = html;
+}
+
+// 展开/收起大类
+function toggleCatExpand(header) {
+  header.classList.toggle('expanded');
+  var subs = header.nextElementSibling;
+  subs.classList.toggle('show');
+}
+
+// ==================== 分类弹窗 ====================
+
+function showAddMajorModal() {
+  catModalMode = 'addMajor';
+  catModalTarget = null;
+  document.getElementById('catModalTitle').textContent = '新建大类';
+  document.getElementById('catModalInput').value = '';
+  document.getElementById('catModalInput').placeholder = '比如：🐱 宠物、🎁 礼物';
+  document.getElementById('catModalColorGroup').style.display = 'block';
+  document.getElementById('catModalConfirm').textContent = '创建';
+
+  // 渲染颜色选择器
+  renderColorPicker('#6366F1');
+
+  document.getElementById('catModal').style.display = 'flex';
+  document.getElementById('catModalInput').focus();
+}
+
+function showEditMajorModal(catName) {
+  catModalMode = 'editMajor';
+  catModalTarget = { catName: catName };
+  document.getElementById('catModalTitle').textContent = '编辑大类名称';
+  document.getElementById('catModalInput').value = catName;
+  document.getElementById('catModalInput').placeholder = '输入新名称';
+  document.getElementById('catModalColorGroup').style.display = 'block';
+  document.getElementById('catModalConfirm').textContent = '保存';
+
+  var currentColor = userCategories[catName] ? userCategories[catName].color : '#6366F1';
+  renderColorPicker(currentColor);
+
+  document.getElementById('catModal').style.display = 'flex';
+  document.getElementById('catModalInput').focus();
+}
+
+function showAddSubModal(catName) {
+  catModalMode = 'addSub';
+  catModalTarget = { catName: catName };
+  document.getElementById('catModalTitle').textContent = '在「' + catName + '」中添加小类';
+  document.getElementById('catModalInput').value = '';
+  document.getElementById('catModalInput').placeholder = '比如：下午茶、夜宵';
+  document.getElementById('catModalColorGroup').style.display = 'none';
+  document.getElementById('catModalConfirm').textContent = '添加';
+
+  document.getElementById('catModal').style.display = 'flex';
+  document.getElementById('catModalInput').focus();
+}
+
+function showEditSubModal(catName, oldSubName) {
+  catModalMode = 'editSub';
+  catModalTarget = { catName: catName, oldSubName: oldSubName };
+  document.getElementById('catModalTitle').textContent = '编辑小类名称';
+  document.getElementById('catModalInput').value = oldSubName;
+  document.getElementById('catModalInput').placeholder = '输入新名称';
+  document.getElementById('catModalColorGroup').style.display = 'none';
+  document.getElementById('catModalConfirm').textContent = '保存';
+
+  document.getElementById('catModal').style.display = 'flex';
+  document.getElementById('catModalInput').focus();
+}
+
+function renderColorPicker(selectedColor) {
+  var picker = document.getElementById('catModalColors');
+  var html = '';
+  userColorOptions.forEach(function(color) {
+    var cls = (color === selectedColor) ? 'color-dot selected' : 'color-dot';
+    html += '<div class="' + cls + '" style="background:' + color + ';" data-color="' + color + '" onclick="selectColor(this, \'' + color + '\')"></div>';
+  });
+  picker.innerHTML = html;
+  window._selectedCatColor = selectedColor;
+}
+
+function selectColor(dot, color) {
+  document.querySelectorAll('#catModalColors .color-dot').forEach(function(d) { d.classList.remove('selected'); });
+  dot.classList.add('selected');
+  window._selectedCatColor = color;
+}
+
+function closeCatModal() {
+  document.getElementById('catModal').style.display = 'none';
+  catModalMode = null;
+  catModalTarget = null;
+}
+
+// 分类弹窗确认
+document.getElementById('catModalConfirm').addEventListener('click', function() {
+  var name = document.getElementById('catModalInput').value.trim();
+
+  if (!name) {
+    showToast('请输入名称', 'error');
+    return;
+  }
+
+  // 检查是否使用了保留的 emoji/特殊字符
+  if (catModalMode === 'addMajor' || catModalMode === 'editMajor') {
+    // 大类名称检查
+    if (name.length > 20) {
+      showToast('大类名称最多20个字', 'error');
+      return;
+    }
+  }
+
+  if (catModalMode === 'addMajor') {
+    // 新建大类
+    if (categories[name]) {
+      showToast('该大类已存在', 'error');
+      return;
+    }
+    userCategories[name] = {
+      subs: [],
+      color: window._selectedCatColor || '#6366F1'
+    };
+    saveUserCategories();
+    rebuildCategories();
+    refreshCat1Select();
+    refreshSettingsPage();
+    showToast('大类「' + name + '」已创建', 'success');
+
+  } else if (catModalMode === 'editMajor') {
+    // 编辑大类名称
+    var oldName = catModalTarget.catName;
+    if (name !== oldName && categories[name]) {
+      showToast('该名称已被占用', 'error');
+      return;
+    }
+    if (name !== oldName) {
+      var saved = userCategories[oldName];
+      delete userCategories[oldName];
+      userCategories[name] = saved;
+      // 更新已有记录中的分类引用
+      records.forEach(function(r) {
+        if (r.cat1 === oldName) r.cat1 = name;
+      });
+      saveRecords(records);
+    }
+    if (window._selectedCatColor) {
+      userCategories[name].color = window._selectedCatColor;
+    }
+    saveUserCategories();
+    rebuildCategories();
+    refreshCat1Select();
+    refreshAll();
+    showToast('大类已更新', 'success');
+
+  } else if (catModalMode === 'addSub') {
+    // 添加小类
+    var catName = catModalTarget.catName;
+    var allSubs = categories[catName] || [];
+
+    if (allSubs.indexOf(name) >= 0) {
+      showToast('该小类已存在', 'error');
+      return;
+    }
+
+    if (!userCategories[catName]) {
+      userCategories[catName] = { subs: [] };
+    }
+    userCategories[catName].subs.push(name);
+    saveUserCategories();
+    rebuildCategories();
+    refreshCat1Select();
+    refreshSettingsPage();
+    showToast('小类「' + name + '」已添加', 'success');
+
+  } else if (catModalMode === 'editSub') {
+    // 编辑小类名称
+    var catName2 = catModalTarget.catName;
+    var oldSub = catModalTarget.oldSubName;
+    var allSubs2 = categories[catName2] || [];
+
+    if (name !== oldSub && allSubs2.indexOf(name) >= 0) {
+      showToast('该小类已存在', 'error');
+      return;
+    }
+
+    // 更新用户分类中的小类名
+    if (userCategories[catName2] && userCategories[catName2].subs) {
+      var idx = userCategories[catName2].subs.indexOf(oldSub);
+      if (idx >= 0) {
+        userCategories[catName2].subs[idx] = name;
+      }
+    }
+    saveUserCategories();
+    rebuildCategories();
+
+    // 更新已有记录中的分类引用
+    records.forEach(function(r) {
+      if (r.cat1 === catName2 && r.cat2 === oldSub) r.cat2 = name;
+    });
+    saveRecords(records);
+
+    refreshCat1Select();
+    refreshAll();
+    showToast('小类已更新', 'success');
+  }
+
+  closeCatModal();
+});
+
+// 点击遮罩关闭分类弹窗
+document.getElementById('catModal').addEventListener('click', function(e) {
+  if (e.target === this) closeCatModal();
+});
+
+// ==================== 分类删除弹窗 ====================
+
+function showCatDeleteModal(type, catName, subName) {
+  catDeleteTarget = { type: type, catName: catName, subName: subName };
+  var msg;
+  if (type === 'major') {
+    msg = '确定要删除大类「' + catName + '」及其所有小类吗？\n\n注意：该分类下已有的记账记录不会被删除，但会失去分类归属。';
+  } else {
+    msg = '确定要删除小类「' + subName + '」吗？\n\n注意：该分类下已有的记账记录不会被删除。';
+  }
+  document.getElementById('catDeleteMsg').textContent = msg;
+  document.getElementById('catDeleteModal').style.display = 'flex';
+}
+
+function closeCatDeleteModal() {
+  catDeleteTarget = null;
+  document.getElementById('catDeleteModal').style.display = 'none';
+}
+
+document.getElementById('catDeleteModal').addEventListener('click', function(e) {
+  if (e.target === this) closeCatDeleteModal();
+});
+
+document.getElementById('catDeleteConfirm').addEventListener('click', function() {
+  if (!catDeleteTarget) return;
+
+  var target = catDeleteTarget;
+  if (target.type === 'major') {
+    // 删除整个大类
+    delete userCategories[target.catName];
+    saveUserCategories();
+    rebuildCategories();
+    refreshCat1Select();
+    refreshAll();
+    showToast('大类「' + target.catName + '」已删除', 'success');
+  } else {
+    // 删除小类
+    if (userCategories[target.catName] && userCategories[target.catName].subs) {
+      var idx = userCategories[target.catName].subs.indexOf(target.subName);
+      if (idx >= 0) {
+        userCategories[target.catName].subs.splice(idx, 1);
+        // 如果用户分类下没有小类了，且这不是用户自建的大类，清理空条目
+        if (userCategories[target.catName].subs.length === 0 && isPresetMajor(target.catName)) {
+          delete userCategories[target.catName];
+        }
+      }
+    }
+    saveUserCategories();
+    rebuildCategories();
+    refreshCat1Select();
+    refreshSettingsPage();
+    showToast('小类「' + target.subName + '」已删除', 'success');
+  }
+
+  closeCatDeleteModal();
+});
 
 // ==================== 启动 ====================
 
