@@ -1,0 +1,13 @@
+# 系统文件（Mac）
+.DS_Store
+
+# 系统文件（Windows）
+Thumbs.db
+desktop.ini
+
+# 浏览器缓存
+*.log
+
+# 编辑器临时文件
+.vscode/
+.idea/
