@@ -676,12 +676,192 @@ body {
   transform: scale(1.15);
 }
 
+/* ========== 俄罗斯方块 ========== */
+.tetris-container {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.tetris-board-wrap {
+  position: relative;
+  background: #0F172A;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.tetris-board-wrap canvas {
+  display: block;
+}
+
+.tetris-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 130px;
+}
+
+.tetris-info-box {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.tetris-info-box .info-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.tetris-info-box .info-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.tetris-next-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.tetris-next-wrap canvas {
+  display: block;
+}
+
+.tetris-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tetris-controls .btn-game {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.btn-start {
+  background: var(--primary);
+  color: white;
+}
+.btn-start:hover { opacity: 0.9; }
+
+.btn-pause {
+  background: var(--warning);
+  color: white;
+}
+.btn-pause:hover { opacity: 0.9; }
+
+.btn-restart {
+  background: var(--border);
+  color: var(--text);
+}
+.btn-restart:hover { background: #CBD5E1; }
+
+/* 触屏方向键 */
+.tetris-dpad {
+  display: none;
+  margin-top: 16px;
+  gap: 8px;
+  justify-content: center;
+}
+
+.tetris-dpad .dpad-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.tetris-dpad button {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.tetris-dpad button:active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  transform: scale(0.93);
+}
+
+.tetris-dpad .btn-drop {
+  width: auto;
+  padding: 0 24px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.tetris-game-over {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 10;
+}
+
+.tetris-game-over .go-title {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.tetris-game-over .go-score {
+  font-size: 16px;
+  color: #FCD34D;
+  margin-bottom: 16px;
+}
+
+.tetris-game-over .go-btn {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  background: white;
+  color: #0F172A;
+  font-family: inherit;
+}
+
 /* ========== 响应式 ========== */
 @media (max-width: 480px) {
   .app { max-width: 100%; }
   .header { padding: 16px 16px 14px; }
   .header h1 { font-size: 20px; }
   .page { padding: 12px 12px 90px; }
+  .tetris-dpad { display: flex; flex-direction: column; }
+  .tetris-container { flex-direction: column; align-items: center; }
 }
 </style>
 </head>
@@ -763,6 +943,66 @@ body {
     <div id="settingsCatList"></div>
   </div>
 
+  <!-- 俄罗斯方块 -->
+  <div class="page" id="page-tetris">
+    <div class="tetris-container" id="tetrisContainer">
+      <!-- 主游戏区 -->
+      <div class="tetris-board-wrap" id="tetrisBoardWrap">
+        <canvas id="tetrisCanvas"></canvas>
+        <div class="tetris-game-over" id="tetrisGameOver" style="display:none;">
+          <div class="go-title">游戏结束</div>
+          <div class="go-score" id="tetrisFinalScore">得分：0</div>
+          <button class="go-btn" onclick="tetrisRestart()">再来一局</button>
+        </div>
+      </div>
+
+      <!-- 信息面板 -->
+      <div class="tetris-panel">
+        <div class="tetris-info-box">
+          <div class="info-label">📊 得分</div>
+          <div class="info-value" id="tetrisScore">0</div>
+        </div>
+        <div class="tetris-info-box">
+          <div class="info-label">📈 等级</div>
+          <div class="info-value" id="tetrisLevel">1</div>
+        </div>
+        <div class="tetris-info-box">
+          <div class="info-label">📏 消行</div>
+          <div class="info-value" id="tetrisLines">0</div>
+        </div>
+        <div class="tetris-info-box">
+          <div class="info-label">下一个</div>
+          <div class="tetris-next-wrap">
+            <canvas id="tetrisNextCanvas"></canvas>
+          </div>
+        </div>
+        <div class="tetris-controls">
+          <button class="btn-game btn-start" id="btnTetrisStart" onclick="tetrisStart()">🎮 开始游戏</button>
+          <button class="btn-game btn-pause" id="btnTetrisPause" onclick="tetrisPause()" style="display:none;">⏸ 暂停</button>
+          <button class="btn-game btn-restart" onclick="tetrisRestart()">🔄 重新开始</button>
+        </div>
+      </div>
+
+      <!-- 触屏方向键 -->
+      <div class="tetris-dpad" id="tetrisDpad">
+        <div class="dpad-row">
+          <button onclick="tetrisRotate()" title="旋转">↻</button>
+        </div>
+        <div class="dpad-row">
+          <button onclick="tetrisMove(-1)" title="左移">◀</button>
+          <button onclick="tetrisMove(1)" title="右移">▶</button>
+        </div>
+        <div class="dpad-row">
+          <button onclick="tetrisMove(0)" title="下移">▼</button>
+        </div>
+        <div class="dpad-row">
+          <button class="btn-drop" onclick="tetrisDrop()">⏬ 直接落底</button>
+        </div>
+      </div>
+    </div>
+    <p style="text-align:center;color:var(--text-muted);font-size:12px;margin-top:12px;">💡 键盘操作：← → 移动 | ↑ 旋转 | ↓ 下落 | 空格 落底 | P 暂停</p>
+  </div>
+
   <!-- 底部导航 -->
   <div class="tab-bar">
     <button class="tab-item active" data-page="add" onclick="switchPage('add')">
@@ -776,6 +1016,9 @@ body {
     </button>
     <button class="tab-item" data-page="settings" onclick="switchPage('settings')">
       <span class="tab-icon">⚙️</span> 设置
+    </button>
+    <button class="tab-item" data-page="tetris" onclick="switchPage('tetris')">
+      <span class="tab-icon">🎮</span> 游戏
     </button>
   </div>
 </div>
@@ -1009,6 +1252,11 @@ function updateCat2Options(cat1) {
 // ==================== 页面切换 ====================
 
 function switchPage(pageName) {
+  // 离开俄罗斯方块页面时自动暂停游戏
+  if (pageName !== 'tetris' && tetrisRunning && !tetrisPaused) {
+    tetrisPause();
+  }
+
   // 更新页面显示
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
   document.getElementById('page-' + pageName).classList.add('active');
@@ -1021,6 +1269,7 @@ function switchPage(pageName) {
   if (pageName === 'list') refreshListPage();
   if (pageName === 'stats') refreshStatsPage();
   if (pageName === 'settings') refreshSettingsPage();
+  if (pageName === 'tetris') initTetris();
 }
 
 // ==================== 记账功能 ====================
@@ -1734,6 +1983,469 @@ document.getElementById('catDeleteConfirm').addEventListener('click', function()
 
   closeCatDeleteModal();
 });
+
+// ==================== 俄罗斯方块游戏 ====================
+
+var TETRIS_COLS = 10;
+var TETRIS_ROWS = 20;
+var TETRIS_CELL = 28;
+var TETRIS_NEXT_CELL = 18;
+
+// 7种方块定义
+var TETRIS_PIECES = [
+  { shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], color: '#00D4AA' },
+  { shape: [[1,1],[1,1]], color: '#F7E358' },
+  { shape: [[0,1,0],[1,1,1],[0,0,0]], color: '#B03CD4' },
+  { shape: [[0,1,1],[1,1,0],[0,0,0]], color: '#4ADE80' },
+  { shape: [[1,1,0],[0,1,1],[0,0,0]], color: '#F87171' },
+  { shape: [[1,0,0],[1,1,1],[0,0,0]], color: '#60A5FA' },
+  { shape: [[0,0,1],[1,1,1],[0,0,0]], color: '#FB923C' }
+];
+
+var tetrisBoard = [];
+var tetrisCurrent = null;
+var tetrisNextIdx = -1;
+var tetrisScore = 0;
+var tetrisLevel = 1;
+var tetrisLines = 0;
+var tetrisRunning = false;
+var tetrisPaused = false;
+var tetrisTimer = null;
+var tetrisCanvas, tetrisCtx, tetrisNextCanvas, tetrisNextCtx;
+
+function initTetris() {
+  if (tetrisCanvas) {
+    drawBoard();
+    drawNext();
+    return;
+  }
+
+  tetrisCanvas = document.getElementById('tetrisCanvas');
+  tetrisCtx = tetrisCanvas.getContext('2d');
+  tetrisNextCanvas = document.getElementById('tetrisNextCanvas');
+  tetrisNextCtx = tetrisNextCanvas.getContext('2d');
+
+  // 适配高 DPI 屏幕（Retina / 高分屏）
+  var dpr = window.devicePixelRatio || 1;
+  var mainW = TETRIS_COLS * TETRIS_CELL;
+  var mainH = TETRIS_ROWS * TETRIS_CELL;
+  var nextW = 4 * TETRIS_NEXT_CELL;
+  var nextH = 4 * TETRIS_NEXT_CELL;
+
+  tetrisCanvas.width = mainW * dpr;
+  tetrisCanvas.height = mainH * dpr;
+  tetrisCanvas.style.width = mainW + 'px';
+  tetrisCanvas.style.height = mainH + 'px';
+  tetrisCtx.scale(dpr, dpr);
+
+  tetrisNextCanvas.width = nextW * dpr;
+  tetrisNextCanvas.height = nextH * dpr;
+  tetrisNextCanvas.style.width = nextW + 'px';
+  tetrisNextCanvas.style.height = nextH + 'px';
+  tetrisNextCtx.scale(dpr, dpr);
+
+  document.addEventListener('keydown', tetrisKeydown);
+
+  resetBoard();
+  drawBoard();
+  drawNextPlaceholder();
+}
+
+function resetBoard() {
+  tetrisBoard = [];
+  for (var r = 0; r < TETRIS_ROWS; r++) {
+    tetrisBoard[r] = [];
+    for (var c = 0; c < TETRIS_COLS; c++) {
+      tetrisBoard[r][c] = '';
+    }
+  }
+}
+
+// 顺时针旋转矩阵
+function rotateMatrix(matrix) {
+  var rows = matrix.length;
+  var cols = matrix[0].length;
+  var result = [];
+  for (var c = 0; c < cols; c++) {
+    result[c] = [];
+    for (var r = rows - 1; r >= 0; r--) {
+      result[c][rows - 1 - r] = matrix[r][c];
+    }
+  }
+  return result;
+}
+
+function randomPieceIdx() {
+  return Math.floor(Math.random() * TETRIS_PIECES.length);
+}
+
+function createPiece(idx) {
+  var p = TETRIS_PIECES[idx];
+  var matrix = p.shape.map(function(row) { return row.slice(); });
+  return {
+    pieceIndex: idx,
+    matrix: matrix,
+    color: p.color,
+    row: 0,
+    col: Math.floor((TETRIS_COLS - matrix[0].length) / 2)
+  };
+}
+
+function spawnPiece() {
+  if (tetrisNextIdx === -1) {
+    tetrisNextIdx = randomPieceIdx();
+  }
+
+  tetrisCurrent = createPiece(tetrisNextIdx);
+  tetrisNextIdx = randomPieceIdx();
+
+  if (!isValidPosition(tetrisCurrent.matrix, tetrisCurrent.row, tetrisCurrent.col)) {
+    endGame();
+  }
+
+  drawNext();
+}
+
+function isValidPosition(matrix, row, col) {
+  for (var r = 0; r < matrix.length; r++) {
+    for (var c = 0; c < matrix[r].length; c++) {
+      if (!matrix[r][c]) continue;
+      var newR = row + r;
+      var newC = col + c;
+      if (newC < 0 || newC >= TETRIS_COLS || newR >= TETRIS_ROWS) return false;
+      if (newR < 0) continue;
+      if (tetrisBoard[newR][newC]) return false;
+    }
+  }
+  return true;
+}
+
+function tetrisStart() {
+  if (tetrisRunning && !tetrisPaused) return;
+
+  if (!tetrisRunning) {
+    resetBoard();
+    tetrisScore = 0;
+    tetrisLevel = 1;
+    tetrisLines = 0;
+    tetrisRunning = true;
+    tetrisPaused = false;
+    tetrisCurrent = null;
+    tetrisNextIdx = randomPieceIdx();
+    spawnPiece();
+    updateTetrisUI();
+    document.getElementById('tetrisGameOver').style.display = 'none';
+  } else {
+    tetrisPaused = false;
+  }
+
+  document.getElementById('btnTetrisStart').style.display = 'none';
+  document.getElementById('btnTetrisPause').style.display = 'block';
+
+  startTimer();
+  drawBoard();
+}
+
+function startTimer() {
+  if (tetrisTimer) clearInterval(tetrisTimer);
+  var speed = Math.max(80, 800 - (tetrisLevel - 1) * 70);
+  tetrisTimer = setInterval(gameLoop, speed);
+}
+
+function tetrisPause() {
+  if (!tetrisRunning || tetrisPaused) return;
+  tetrisPaused = true;
+  if (tetrisTimer) {
+    clearInterval(tetrisTimer);
+    tetrisTimer = null;
+  }
+  document.getElementById('btnTetrisStart').style.display = 'block';
+  document.getElementById('btnTetrisStart').textContent = '▶ 继续';
+  document.getElementById('btnTetrisPause').style.display = 'none';
+}
+
+function tetrisRestart() {
+  if (tetrisTimer) {
+    clearInterval(tetrisTimer);
+    tetrisTimer = null;
+  }
+  tetrisRunning = false;
+  tetrisPaused = false;
+  tetrisCurrent = null;
+  tetrisNextIdx = -1;
+  resetBoard();
+  tetrisScore = 0;
+  tetrisLevel = 1;
+  tetrisLines = 0;
+  document.getElementById('tetrisGameOver').style.display = 'none';
+  document.getElementById('btnTetrisStart').style.display = 'block';
+  document.getElementById('btnTetrisStart').textContent = '🎮 开始游戏';
+  document.getElementById('btnTetrisPause').style.display = 'none';
+  updateTetrisUI();
+  drawBoard();
+  drawNextPlaceholder();
+}
+
+function gameLoop() {
+  if (!tetrisRunning || tetrisPaused || !tetrisCurrent) return;
+
+  if (isValidPosition(tetrisCurrent.matrix, tetrisCurrent.row + 1, tetrisCurrent.col)) {
+    tetrisCurrent.row++;
+    drawBoard();
+  } else {
+    lockPiece();
+  }
+}
+
+function lockPiece() {
+  var m = tetrisCurrent.matrix;
+  for (var r = 0; r < m.length; r++) {
+    for (var c = 0; c < m[r].length; c++) {
+      if (!m[r][c]) continue;
+      var boardR = tetrisCurrent.row + r;
+      var boardC = tetrisCurrent.col + c;
+      if (boardR < 0) {
+        endGame();
+        return;
+      }
+      tetrisBoard[boardR][boardC] = tetrisCurrent.color;
+    }
+  }
+
+  clearFullLines();
+  spawnPiece();
+  drawBoard();
+}
+
+function clearFullLines() {
+  var cleared = 0;
+  for (var r = TETRIS_ROWS - 1; r >= 0; r--) {
+    var full = true;
+    for (var c = 0; c < TETRIS_COLS; c++) {
+      if (!tetrisBoard[r][c]) { full = false; break; }
+    }
+    if (full) {
+      tetrisBoard.splice(r, 1);
+      tetrisBoard.unshift([]);
+      for (var c2 = 0; c2 < TETRIS_COLS; c2++) {
+        tetrisBoard[0][c2] = '';
+      }
+      cleared++;
+      r++;
+    }
+  }
+
+  if (cleared > 0) {
+    var points = [0, 100, 300, 500, 800];
+    tetrisScore += points[cleared];
+    tetrisLines += cleared;
+    tetrisLevel = Math.floor(tetrisLines / 10) + 1;
+    updateTetrisUI();
+    if (tetrisRunning && !tetrisPaused) {
+      startTimer();
+    }
+  }
+}
+
+function endGame() {
+  tetrisRunning = false;
+  tetrisPaused = false;
+  if (tetrisTimer) {
+    clearInterval(tetrisTimer);
+    tetrisTimer = null;
+  }
+  tetrisCurrent = null;
+  document.getElementById('tetrisFinalScore').textContent = '得分：' + tetrisScore;
+  document.getElementById('tetrisGameOver').style.display = 'flex';
+  document.getElementById('btnTetrisStart').style.display = 'none';
+  document.getElementById('btnTetrisPause').style.display = 'none';
+  drawBoard();
+}
+
+function tetrisMove(dir) {
+  if (!tetrisRunning || tetrisPaused || !tetrisCurrent) return;
+
+  if (dir === 0) {
+    if (isValidPosition(tetrisCurrent.matrix, tetrisCurrent.row + 1, tetrisCurrent.col)) {
+      tetrisCurrent.row++;
+      drawBoard();
+    }
+  } else {
+    if (isValidPosition(tetrisCurrent.matrix, tetrisCurrent.row, tetrisCurrent.col + dir)) {
+      tetrisCurrent.col += dir;
+      drawBoard();
+    }
+  }
+}
+
+function tetrisRotate() {
+  if (!tetrisRunning || tetrisPaused || !tetrisCurrent) return;
+
+  var rotated = rotateMatrix(tetrisCurrent.matrix);
+  if (isValidPosition(rotated, tetrisCurrent.row, tetrisCurrent.col)) {
+    tetrisCurrent.matrix = rotated;
+  } else {
+    var kicks = [-1, 1, -2, 2];
+    for (var i = 0; i < kicks.length; i++) {
+      if (isValidPosition(rotated, tetrisCurrent.row, tetrisCurrent.col + kicks[i])) {
+        tetrisCurrent.matrix = rotated;
+        tetrisCurrent.col += kicks[i];
+        break;
+      }
+    }
+  }
+  drawBoard();
+}
+
+function tetrisDrop() {
+  if (!tetrisRunning || tetrisPaused || !tetrisCurrent) return;
+
+  while (isValidPosition(tetrisCurrent.matrix, tetrisCurrent.row + 1, tetrisCurrent.col)) {
+    tetrisCurrent.row++;
+  }
+  lockPiece();
+  drawBoard();
+}
+
+function tetrisKeydown(e) {
+  if (!document.getElementById('page-tetris').classList.contains('active')) return;
+
+  switch (e.key) {
+    case 'ArrowLeft': e.preventDefault(); tetrisMove(-1); break;
+    case 'ArrowRight': e.preventDefault(); tetrisMove(1); break;
+    case 'ArrowDown': e.preventDefault(); tetrisMove(0); break;
+    case 'ArrowUp': e.preventDefault(); tetrisRotate(); break;
+    case ' ': e.preventDefault(); tetrisDrop(); break;
+    case 'p': case 'P':
+      if (tetrisRunning) {
+        if (tetrisPaused) tetrisStart();
+        else tetrisPause();
+      }
+      break;
+  }
+}
+
+function updateTetrisUI() {
+  document.getElementById('tetrisScore').textContent = tetrisScore;
+  document.getElementById('tetrisLevel').textContent = tetrisLevel;
+  document.getElementById('tetrisLines').textContent = tetrisLines;
+}
+
+function drawBoard() {
+  if (!tetrisCtx) return;
+  var W = TETRIS_COLS * TETRIS_CELL;
+  var H = TETRIS_ROWS * TETRIS_CELL;
+
+  tetrisCtx.clearRect(0, 0, W, H);
+
+  // 背景
+  tetrisCtx.fillStyle = '#1E293B';
+  tetrisCtx.fillRect(0, 0, W, H);
+
+  // 网格线
+  tetrisCtx.strokeStyle = '#334155';
+  tetrisCtx.lineWidth = 0.5;
+  for (var r = 0; r <= TETRIS_ROWS; r++) {
+    tetrisCtx.beginPath();
+    tetrisCtx.moveTo(0, r * TETRIS_CELL);
+    tetrisCtx.lineTo(W, r * TETRIS_CELL);
+    tetrisCtx.stroke();
+  }
+  for (var c = 0; c <= TETRIS_COLS; c++) {
+    tetrisCtx.beginPath();
+    tetrisCtx.moveTo(c * TETRIS_CELL, 0);
+    tetrisCtx.lineTo(c * TETRIS_CELL, H);
+    tetrisCtx.stroke();
+  }
+
+  // 已锁定的方块
+  for (var r2 = 0; r2 < TETRIS_ROWS; r2++) {
+    for (var c2 = 0; c2 < TETRIS_COLS; c2++) {
+      if (tetrisBoard[r2][c2]) {
+        drawTetrisCell(tetrisCtx, c2, r2, tetrisBoard[r2][c2], TETRIS_CELL);
+      }
+    }
+  }
+
+  // 当前方块
+  if (tetrisCurrent) {
+    var m = tetrisCurrent.matrix;
+    for (var r3 = 0; r3 < m.length; r3++) {
+      for (var c3 = 0; c3 < m[r3].length; c3++) {
+        if (m[r3][c3]) {
+          var drawR = tetrisCurrent.row + r3;
+          var drawC = tetrisCurrent.col + c3;
+          if (drawR >= 0) {
+            drawTetrisCell(tetrisCtx, drawC, drawR, tetrisCurrent.color, TETRIS_CELL);
+          }
+        }
+      }
+    }
+  }
+}
+
+function drawTetrisCell(ctx, col, row, color, size) {
+  var x = col * size;
+  var y = row * size;
+  var inset = 1;
+
+  ctx.fillStyle = color;
+  ctx.fillRect(x + inset, y + inset, size - inset * 2, size - inset * 2);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillRect(x + inset, y + inset, size - inset * 2, 3);
+  ctx.fillRect(x + inset, y + inset, 3, size - inset * 2);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(x + inset, y + size - inset - 3, size - inset * 2, 3);
+  ctx.fillRect(x + size - inset - 3, y + inset, 3, size - inset * 2);
+}
+
+function drawNext() {
+  if (!tetrisNextCtx) return;
+  var w = tetrisNextCanvas.width;
+  var h = tetrisNextCanvas.height;
+  tetrisNextCtx.clearRect(0, 0, w, h);
+  tetrisNextCtx.fillStyle = '#FFFFFF';
+  tetrisNextCtx.fillRect(0, 0, w, h);
+
+  if (tetrisNextIdx < 0) return;
+
+  var p = TETRIS_PIECES[tetrisNextIdx];
+  var matrix = p.shape;
+  var offsetX = (w - matrix[0].length * TETRIS_NEXT_CELL) / 2;
+  var offsetY = (h - matrix.length * TETRIS_NEXT_CELL) / 2;
+
+  for (var r = 0; r < matrix.length; r++) {
+    for (var c = 0; c < matrix[r].length; c++) {
+      if (matrix[r][c]) {
+        var cx = offsetX + c * TETRIS_NEXT_CELL;
+        var cy = offsetY + r * TETRIS_NEXT_CELL;
+        tetrisNextCtx.fillStyle = p.color;
+        tetrisNextCtx.fillRect(cx + 1, cy + 1, TETRIS_NEXT_CELL - 2, TETRIS_NEXT_CELL - 2);
+        tetrisNextCtx.fillStyle = 'rgba(255,255,255,0.25)';
+        tetrisNextCtx.fillRect(cx + 1, cy + 1, TETRIS_NEXT_CELL - 2, 2);
+        tetrisNextCtx.fillRect(cx + 1, cy + 1, 2, TETRIS_NEXT_CELL - 2);
+        tetrisNextCtx.fillStyle = 'rgba(0,0,0,0.25)';
+        tetrisNextCtx.fillRect(cx + 1, cy + TETRIS_NEXT_CELL - 3, TETRIS_NEXT_CELL - 2, 2);
+        tetrisNextCtx.fillRect(cx + TETRIS_NEXT_CELL - 3, cy + 1, 2, TETRIS_NEXT_CELL - 2);
+      }
+    }
+  }
+}
+
+function drawNextPlaceholder() {
+  if (!tetrisNextCtx) return;
+  var w = tetrisNextCanvas.width;
+  var h = tetrisNextCanvas.height;
+  tetrisNextCtx.clearRect(0, 0, w, h);
+  tetrisNextCtx.fillStyle = '#FFFFFF';
+  tetrisNextCtx.fillRect(0, 0, w, h);
+  tetrisNextCtx.fillStyle = '#A0AEC0';
+  tetrisNextCtx.font = '12px sans-serif';
+  tetrisNextCtx.textAlign = 'center';
+  tetrisNextCtx.fillText('点击开始', w / 2, h / 2);
+}
 
 // ==================== 启动 ====================
 
