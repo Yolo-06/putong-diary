@@ -458,5 +458,25 @@ if (failed === 0) {
   console.log('🎉 所有测试通过！应用运行正常。');
 }
 
+// ========== 写入标记文件（供 gitcommit-agent / pre-commit hook 读  ==========
+
+const resultFilePath = path.join(__dirname, '.test-result.json');
+const codeHash = process.env.CODE_HASH || 'unknown';
+const resultData = {
+  passed: failed === 0,
+  passedCount: passed,
+  failedCount: failed,
+  totalCount: passed + failed,
+  passRate: parseFloat(((passed / (passed + failed)) * 100).toFixed(1)),
+  codeHash: codeHash,
+  timestamp: new Date().toISOString()
+};
+
+try {
+  fs.writeFileSync(resultFilePath, JSON.stringify(resultData, null, 2), 'utf-8');
+} catch(e) {
+  console.log('⚠️ 无法写入测试结果标记文件：' + e.message);
+}
+
 // 返回退出码（CI 工具可以根据退出码判断测试是否通过）
 process.exit(failed > 0 ? 1 : 0);

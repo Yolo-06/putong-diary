@@ -20,3 +20,7 @@ npm-debug.log*
 
 # Claude Code 临时文件
 .claude/worktrees/
+
+# 质量门禁凭证文件（运行时生成，不需要提交）
+tests/.test-result.json
+tests/.quality-result.json

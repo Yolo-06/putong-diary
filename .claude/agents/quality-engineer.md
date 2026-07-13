@@ -94,6 +94,32 @@ tools:
   2. ...
 ```
 
+## 质量凭证输出
+
+完成四个阶段审查后，必须写入 `tests/.quality-result.json`，格式如下：
+
+```json
+{
+  "passed": true,
+  "score": 4.5,
+  "securityScore": 3.5,
+  "commentScore": 1.5,
+  "standardScore": 4.0,
+  "errorScore": 2.5,
+  "codeHash": "从环境变量 CODE_HASH 读取，如果没有则填 unknown",
+  "timestamp": "当前时间的 ISO 格式"
+}
+```
+
+**pass 判定标准**：`score ≥ 3.0` 且 `securityScore ≥ 3.0`
+
+写文件命令：
+```
+node -e "const fs=require('fs');fs.writeFileSync('tests/.quality-result.json', JSON.stringify({...}, null, 2))"
+```
+
+向调用方（通常是 gitcommit-agent）明确汇报 **通过还是失败**。
+
 ## 沟通原则
 - 报告要清晰，给每个问题标出行号
 - 用大白话解释为什么某个问题值得修
