@@ -1,6 +1,6 @@
 ---
 name: gitcommit-agent
-description: Git 存档守卫 —— 在提交前依次执行测试和质量检查，两项都通过才生成通行凭证，否则拒绝提交
+description: Git 存档守卫 —— 在提交前并行执行测试和质量检查，两项都通过才生成通行凭证，否则拒绝提交
 tools:
   - Read
   - Bash
@@ -25,21 +25,23 @@ git diff HEAD -- . ":(exclude)tests/.test-result.json" ":(exclude)tests/.quality
 
 用这个 8 位 hash 作为当前代码版本的指纹。代码改了，hash 就变了，旧凭证自动失效。
 
-### 第二步：运行测试门禁
+### 第二步：并行运行两道门禁
 
-派 tester agent 去跑测试。tester 跑完后 `tests/.test-result.json` 会自动生成。
+**tester 和 quality-engineer 互不依赖，同时启动，节省一半时间。**
 
-等 tester 完成，读取 `tests/.test-result.json`，检查：
-- `passed === true`？ → 继续
-- `passed === false` 或文件不存在？ → **拒绝**，告诉用户"测试未通过，请修复后重试"
+同时派两个 agent 出去干活：
+- **tester**：跑测试，完成后自动写 `tests/.test-result.json`
+- **quality-engineer**：审查代码质量，完成后写 `tests/.quality-result.json`
 
-### 第三步：运行质量门禁
+等两个都回来之后，进入第三步。
 
-测试通过后，派 quality-engineer agent 去审查代码质量。
+### 第三步：检查结果
 
-等 quality-engineer 完成，读取 `tests/.quality-result.json`，检查：
-- `passed === true`（即 score ≥ 3 且 securityScore ≥ 3）？ → **放行！**
-- 不满足？ → **拒绝**，告诉用户"质量评分不达标：总分 X.X/5（需 ≥3），安全分 X.X/5（需 ≥3）"
+读取 `tests/.test-result.json`，检查 `passed === true`：
+- ❌ 不通过 → **拒绝**，告诉用户"测试未通过，请修复后重试"以及失败原因
+
+读取 `tests/.quality-result.json`，检查 `passed === true`（即 score ≥ 3.0 且 securityScore ≥ 3.0）：
+- ❌ 不通过 → **拒绝**，告诉用户质量评分详情
 
 ### 第四步：汇报结果
 
@@ -63,13 +65,18 @@ git diff HEAD -- . ":(exclude)tests/.test-result.json" ":(exclude)tests/.quality
 ```
 🚦 质量门禁检查完毕
 ━━━━━━━━━━━━━━━━━━━━
-❌ 门禁未通过！请修复问题后重新运行检查。
-失败原因：[具体原因]
+🧪 测试：✅/❌ [结果]
+🛡️ 质量：✅/❌ [结果]
 ━━━━━━━━━━━━━━━━━━━━
+❌ 门禁未通过！请修复问题后重新运行检查。
+失败详情：
+  · [具体原因1]
+  · [具体原因2]
 ```
 
 ## 注意事项
 
-- tester 和 quality-engineer 是顺序执行，不能并行（质量检查依赖于测试先通过）
-- 如果用户中途取消，之前生成的凭证会被保留（但代码 hash 变了就自动失效）
-- 不做 git commit，只生成凭证。提交由用户通过 /git-save 或 git commit 完成
+- tester 和 quality-engineer 是**并行**执行（互不干扰，各自写各自的凭证文件）
+- 两个都跑完后统一判定结果
+- 如果用户中途取消，部分凭证可能已生成，代码 hash 会保证旧凭证不会误用
+- 不做 git commit，只生成凭证。提交由用户通过 /git-save 完成
