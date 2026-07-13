@@ -1117,9 +1117,13 @@ function loadUserCategories() {
   }
 }
 
-// 保存用户自定义分类
+// 保存用户自定义分类（把你自己建的分类存到浏览器里）
 function saveUserCategories() {
-  localStorage.setItem('jizhangben_usercats', JSON.stringify(userCategories));
+  try {
+    localStorage.setItem('jizhangben_usercats', JSON.stringify(userCategories));
+  } catch(e) {
+    showToast('保存分类失败！可能是浏览器存储空间已满，请清理后重试', 'error');
+  }
 }
 
 var userCategories = loadUserCategories();
@@ -1170,9 +1174,13 @@ function loadRecords() {
   }
 }
 
-// 保存记录到 localStorage
+// 保存记录到浏览器存储（把记账数据存起来，关掉浏览器再打开还在）
 function saveRecords(records) {
-  localStorage.setItem('jizhangben_records', JSON.stringify(records));
+  try {
+    localStorage.setItem('jizhangben_records', JSON.stringify(records));
+  } catch(e) {
+    showToast('保存失败！可能是浏览器存储空间已满，请导出备份后清理旧数据', 'error');
+  }
 }
 
 var records = loadRecords();
@@ -1188,6 +1196,16 @@ var catDeleteTarget = null;    // 待删除的分类信息
 function getCurrentMonth() {
   var d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+// 月份加减工具：输入 "2026-07" 和 -1，输出 "2026-06"（自动处理跨年）
+function shiftMonth(monthStr, delta) {
+  var parts = monthStr.split('-');
+  var y = parseInt(parts[0]), m = parseInt(parts[1]);
+  m += delta;
+  while (m > 12) { y++; m -= 12; }
+  while (m < 1)  { y--; m += 12; }
+  return y + '-' + String(m).padStart(2, '0');
 }
 
 // ==================== 初始化 ====================
@@ -1281,9 +1299,14 @@ function addRecord() {
   var date = document.getElementById('dateInput').value;
   var note = document.getElementById('noteInput').value.trim();
 
-  // 验证
+  // 验证金额：不能为空、不是数字、小于等于0、超过上限（99999999.99）
   if (!amountStr || isNaN(parseFloat(amountStr)) || parseFloat(amountStr) <= 0) {
     showToast('请输入正确的金额', 'error');
+    document.getElementById('amountInput').focus();
+    return;
+  }
+  if (parseFloat(amountStr) > 99999999.99) {
+    showToast('金额不能超过 99,999,999.99 元', 'error');
     document.getElementById('amountInput').focus();
     return;
   }
@@ -1297,6 +1320,22 @@ function addRecord() {
   }
   if (!date) {
     showToast('请选择日期', 'error');
+    return;
+  }
+  // 日期合理性检查：不能早于5年前，不能超过7天后（防止误选年份）
+  var selectedDate = new Date(date + 'T00:00:00');
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var fiveYearsAgo = new Date(today);
+  fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+  var sevenDaysLater = new Date(today);
+  sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+  if (selectedDate < fiveYearsAgo) {
+    showToast('日期不能早于5年前，请确认年份是否正确', 'error');
+    return;
+  }
+  if (selectedDate > sevenDaysLater) {
+    showToast('日期不能超过7天后，请确认年份是否正确', 'error');
     return;
   }
 
@@ -1395,7 +1434,7 @@ function refreshListPage() {
       html += '<div class="record-item">' +
         '<div class="record-icon" style="background:' + color + '20;color:' + color + '">' + icon + '</div>' +
         '<div class="record-info">' +
-          '<div class="record-cat">' + r.cat1 + ' · ' + r.cat2 + '</div>' +
+          '<div class="record-cat">' + escapeHtml(r.cat1) + ' · ' + escapeHtml(r.cat2) + '</div>' +
           (r.note ? '<div class="record-note">' + escapeHtml(r.note) + '</div>' : '') +
         '</div>' +
         '<div class="record-amount ' + amountClass + '">' + prefix + '¥' + r.amount.toFixed(2) + '</div>' +
@@ -1407,10 +1446,13 @@ function refreshListPage() {
   listEl.innerHTML = html;
 }
 
+// 防止用户输入的内容被当作代码执行（比如用户输入 <script> 或单引号），
+// 把特殊字符转义成安全的文本显示形式
 function escapeHtml(str) {
   var div = document.createElement('div');
   div.textContent = str;
-  return div.innerHTML;
+  // 在 textContent→innerHTML 基础上，额外转义单引号（用于 onclick 等属性值场景）
+  return div.innerHTML.replace(/'/g, '&#39;');
 }
 
 function formatMonthLabel(monthStr) {
@@ -1425,18 +1467,12 @@ function getMonthRecords(monthStr) {
 }
 
 function prevMonth() {
-  var parts = currentMonth.split('-');
-  var y = parseInt(parts[0]), m = parseInt(parts[1]);
-  if (m === 1) { y--; m = 12; } else { m--; }
-  currentMonth = y + '-' + String(m).padStart(2, '0');
+  currentMonth = shiftMonth(currentMonth, -1);
   refreshListPage();
 }
 
 function nextMonth() {
-  var parts = currentMonth.split('-');
-  var y = parseInt(parts[0]), m = parseInt(parts[1]);
-  if (m === 12) { y++; m = 1; } else { m++; }
-  currentMonth = y + '-' + String(m).padStart(2, '0');
+  currentMonth = shiftMonth(currentMonth, 1);
   refreshListPage();
 }
 
@@ -1557,18 +1593,12 @@ function refreshStatsPage() {
 }
 
 function prevStatsMonth() {
-  var parts = statsMonth.split('-');
-  var y = parseInt(parts[0]), m = parseInt(parts[1]);
-  if (m === 1) { y--; m = 12; } else { m--; }
-  statsMonth = y + '-' + String(m).padStart(2, '0');
+  statsMonth = shiftMonth(statsMonth, -1);
   refreshStatsPage();
 }
 
 function nextStatsMonth() {
-  var parts = statsMonth.split('-');
-  var y = parseInt(parts[0]), m = parseInt(parts[1]);
-  if (m === 12) { y++; m = 1; } else { m++; }
-  statsMonth = y + '-' + String(m).padStart(2, '0');
+  statsMonth = shiftMonth(statsMonth, 1);
   refreshStatsPage();
 }
 
@@ -1584,7 +1614,15 @@ function exportCSV(monthStr) {
   // BOM 确保 Excel 正确识别中文
   var csv = '﻿日期,一级分类,二级分类,金额,类型,备注\n';
   monthRecords.sort(function(a, b) { return a.date.localeCompare(b.date); }).forEach(function(r) {
-    csv += r.date + ',' + r.cat1 + ',' + r.cat2 + ',' + r.amount + ',' + (r.type === 'income' ? '收入' : '支出') + ',' + (r.note || '') + '\n';
+    // CSV 安全处理：防止以 = + - @ 开头的内容被 Excel 当成公式执行
+    var note = r.note || '';
+    if (/^[=+\-@]/.test(note)) note = "'" + note;
+    var cat1 = r.cat1 || '';
+    if (/^[=+\-@]/.test(cat1)) cat1 = "'" + cat1;
+    var cat2 = r.cat2 || '';
+    if (/^[=+\-@]/.test(cat2)) cat2 = "'" + cat2;
+
+    csv += r.date + ',' + cat1 + ',' + cat2 + ',' + r.amount + ',' + (r.type === 'income' ? '收入' : '支出') + ',' + note + '\n';
   });
 
   var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1689,14 +1727,14 @@ function refreshSettingsPage() {
     presetSubs.forEach(function(sub) {
       html += '<div class="cat-sub-item">';
       html += '<span class="sub-lock">🔒</span>';
-      html += '<span class="sub-name">' + sub + '</span>';
+      html += '<span class="sub-name">' + escapeHtml(sub) + '</span>';
       html += '</div>';
     });
 
     // 用户添加的小类
     userSubs.forEach(function(sub) {
       html += '<div class="cat-sub-item">';
-      html += '<span class="sub-name">' + sub + '</span>';
+      html += '<span class="sub-name">' + escapeHtml(sub) + '</span>';
       html += '<span class="cat-actions">';
       html += '<button class="btn-icon btn-icon-edit" onclick="event.stopPropagation();showEditSubModal(\'' + escapeHtml(catName) + '\',\'' + escapeHtml(sub) + '\')" title="编辑">✏️</button>';
       html += '<button class="btn-icon btn-icon-del" onclick="event.stopPropagation();showCatDeleteModal(\'sub\',\'' + escapeHtml(catName) + '\',\'' + escapeHtml(sub) + '\')" title="删除">🗑</button>';
@@ -1713,6 +1751,15 @@ function refreshSettingsPage() {
 
   // 新增自定义大类按钮
   html += '<button class="btn-add-major" onclick="showAddMajorModal()">+ 新建自定义大类</button>';
+
+  // 数据安全提醒
+  html += '<div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;padding:14px 16px;margin-top:14px;">';
+  html += '<div style="font-size:14px;font-weight:600;color:#B45309;margin-bottom:6px;">⚠️ 数据安全提醒</div>';
+  html += '<div style="font-size:12px;color:#92400E;line-height:1.7;">';
+  html += '· 你的所有记账数据保存在<b>浏览器本地</b>，不会上传到任何服务器<br>';
+  html += '· <b>清空浏览器缓存会丢失所有数据</b>，建议定期在"统计"页点击"导出账单"备份<br>';
+  html += '· 换电脑或重装系统前，请务必先导出 CSV 文件备份</div>';
+  html += '</div>';
 
   container.innerHTML = html;
 }
@@ -2025,7 +2072,17 @@ function initTetris() {
   tetrisNextCanvas = document.getElementById('tetrisNextCanvas');
   tetrisNextCtx = tetrisNextCanvas.getContext('2d');
 
-  // 适配高 DPI 屏幕（Retina / 高分屏）
+  // 检查浏览器是否支持 Canvas（极少数老旧的浏览器可能不支持）
+  if (!tetrisCtx || !tetrisNextCtx) {
+    document.getElementById('tetrisContainer').innerHTML =
+      '<div class="empty-state" style="width:100%;">' +
+        '<div class="empty-icon">⚠️</div>' +
+        '<p>您的浏览器不支持游戏画布功能<br>请使用最新版 Chrome、Edge 或 Firefox 浏览器</p>' +
+      '</div>';
+    return;
+  }
+
+  // 适配高清屏幕（2K / 4K 显示器），避免游戏画面模糊
   var dpr = window.devicePixelRatio || 1;
   var mainW = TETRIS_COLS * TETRIS_CELL;
   var mainH = TETRIS_ROWS * TETRIS_CELL;
@@ -2051,6 +2108,7 @@ function initTetris() {
   drawNextPlaceholder();
 }
 
+// 清空游戏棋盘（把所有格子设为空白，准备开始新游戏）
 function resetBoard() {
   tetrisBoard = [];
   for (var r = 0; r < TETRIS_ROWS; r++) {
@@ -2186,6 +2244,7 @@ function tetrisRestart() {
   drawNextPlaceholder();
 }
 
+// 游戏主循环（每隔一定时间自动调用一次）：让当前方块下落一行，到底了就锁住
 function gameLoop() {
   if (!tetrisRunning || tetrisPaused || !tetrisCurrent) return;
 
@@ -2197,13 +2256,16 @@ function gameLoop() {
   }
 }
 
+// 把当前方块"锁"到棋盘上（方块到底了，就变成棋盘的一部分，然后消除满行、生成新方块）
 function lockPiece() {
   var m = tetrisCurrent.matrix;
+  // 逐格把方块颜色印到棋盘上
   for (var r = 0; r < m.length; r++) {
     for (var c = 0; c < m[r].length; c++) {
       if (!m[r][c]) continue;
       var boardR = tetrisCurrent.row + r;
       var boardC = tetrisCurrent.col + c;
+      // 如果方块还卡在棋盘顶部之上 → 游戏结束
       if (boardR < 0) {
         endGame();
         return;
@@ -2217,20 +2279,24 @@ function lockPiece() {
   drawBoard();
 }
 
+// 消除所有已经填满的行（从底部往顶部检查，一次消一行或多行）
 function clearFullLines() {
   var cleared = 0;
   for (var r = TETRIS_ROWS - 1; r >= 0; r--) {
+    // 检查第 r 行是否满了
     var full = true;
     for (var c = 0; c < TETRIS_COLS; c++) {
       if (!tetrisBoard[r][c]) { full = false; break; }
     }
     if (full) {
+      // 移除此行，并在顶部补一个空行（让上面的行自然下沉）
       tetrisBoard.splice(r, 1);
       tetrisBoard.unshift([]);
       for (var c2 = 0; c2 < TETRIS_COLS; c2++) {
         tetrisBoard[0][c2] = '';
       }
       cleared++;
+      // 关键：r++ 抵消循环的 r--，因为消除后上面的行下沉了，要重新检查当前位置
       r++;
     }
   }
@@ -2247,6 +2313,7 @@ function clearFullLines() {
   }
 }
 
+// 游戏结束：停止计时器、显示分数面板
 function endGame() {
   tetrisRunning = false;
   tetrisPaused = false;
@@ -2262,15 +2329,18 @@ function endGame() {
   drawBoard();
 }
 
+// 移动当前方块：dir=-1 左移，dir=1 右移，dir=0 下移（软降）
 function tetrisMove(dir) {
   if (!tetrisRunning || tetrisPaused || !tetrisCurrent) return;
 
   if (dir === 0) {
+    // 向下移动一行
     if (isValidPosition(tetrisCurrent.matrix, tetrisCurrent.row + 1, tetrisCurrent.col)) {
       tetrisCurrent.row++;
       drawBoard();
     }
   } else {
+    // 左右移动
     if (isValidPosition(tetrisCurrent.matrix, tetrisCurrent.row, tetrisCurrent.col + dir)) {
       tetrisCurrent.col += dir;
       drawBoard();
@@ -2278,6 +2348,7 @@ function tetrisMove(dir) {
   }
 }
 
+// 顺时针旋转当前方块：先尝试直接旋转，如果位置不够就左右"蹬一脚"试试
 function tetrisRotate() {
   if (!tetrisRunning || tetrisPaused || !tetrisCurrent) return;
 
@@ -2285,6 +2356,7 @@ function tetrisRotate() {
   if (isValidPosition(rotated, tetrisCurrent.row, tetrisCurrent.col)) {
     tetrisCurrent.matrix = rotated;
   } else {
+    // 墙踢（Wall Kick）：贴墙旋转时，尝试左右偏移 1-2 格
     var kicks = [-1, 1, -2, 2];
     for (var i = 0; i < kicks.length; i++) {
       if (isValidPosition(rotated, tetrisCurrent.row, tetrisCurrent.col + kicks[i])) {
@@ -2296,6 +2368,8 @@ function tetrisRotate() {
   }
   drawBoard();
 }
+
+// 硬降：方块直接落到底（空格键触发）
 
 function tetrisDrop() {
   if (!tetrisRunning || tetrisPaused || !tetrisCurrent) return;
