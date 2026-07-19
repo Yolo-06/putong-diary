@@ -34,7 +34,7 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html { overflow-y: scroll; }
+html, body { height: 100%; overflow: hidden; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
   background: #F8F0F0;
@@ -46,9 +46,11 @@ body {
 .app {
   width: 100%;
   max-width: 414px;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--bg);
   position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
   overflow-x: hidden;
 }
 
