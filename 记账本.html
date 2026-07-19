@@ -104,20 +104,42 @@ body {
 .tab-item.active { color: var(--pink); font-weight: 700; }
 .tab-item.active .tab-icon { transform: translateY(-2px); }
 
-/* ========== 轮播图 ========== */
-.carousel-wrap { position: relative; overflow: hidden; border-radius: var(--radius); margin-bottom: 14px; box-shadow: var(--shadow); }
-.carousel-track { display: flex; transition: transform 0.4s ease; }
-.carousel-slide {
-  min-width: 100%; height: 120px; display: flex;
-  align-items: center; justify-content: center; text-align: center;
-  padding: 20px; color: white; font-size: 14px; font-weight: 600;
+/* ========== 轮播图（拍立得堆叠+果冻切换） ========== */
+.carousel-wrap {
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; padding: 10px 0 4px; margin-bottom: 4px;
+  position: relative; touch-action: pan-x; user-select: none;
 }
-.carousel-slide:nth-child(1) { background: linear-gradient(135deg, #FFB5C2, #FF9AA2); }
-.carousel-slide:nth-child(2) { background: linear-gradient(135deg, #B5EAD7, #7EC8A0); }
-.carousel-slide:nth-child(3) { background: linear-gradient(135deg, #D5C6E0, #B8A9C9); }
-.carousel-dots { display: flex; justify-content: center; gap: 6px; padding: 10px 0; }
-.carousel-dot { width: 6px; height: 6px; border-radius: 3px; background: var(--border); transition: all 0.3s; }
-.carousel-dot.active { width: 18px; background: var(--pink); }
+.carousel-track {
+  display: flex; align-items: center; gap: 0;
+  transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  will-change: transform;
+}
+.carousel-slide {
+  min-width: 85%; flex-shrink: 0; padding: 24px 20px;
+  border-radius: 28px; background: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(255,183,197,0.2);
+  text-align: center; font-size: 13px; font-weight: 600; color: var(--text);
+  transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              opacity 0.45s ease;
+  transform: scale(0.88); opacity: 0.5;
+}
+.carousel-slide.active {
+  transform: scale(1); opacity: 1;
+  box-shadow: 0 12px 32px rgba(255,183,197,0.3);
+}
+.carousel-dots { display: flex; justify-content: center; gap: 8px; padding: 6px 0 10px; }
+.carousel-dot {
+  font-size: 12px; cursor: pointer; transition: all 0.3s; opacity: 0.4;
+}
+.carousel-dot.active { opacity: 1; animation: heartBeat 1.2s infinite ease-in-out; }
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  14% { transform: scale(1.24); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.20); }
+  70% { transform: scale(1); }
+}
 
 /* ========== 手账入口卡片 ========== */
 .journal-entry-card {
@@ -1107,37 +1129,56 @@ function buildCarousel(){
   var diff=lmExp>0?(exp-lmExp):0;
   var jToday=journals.filter(function(j){return j.date===todayStr;}).length;
 
+  var todayRecCount=todayRecords.length;
   carouselData=[{
-    text:healingQuotes[Math.floor(Math.random()*healingQuotes.length)],
-    subtext:'今日花销 ¥'+(exp||0).toFixed(2)+'  写了'+jToday+'条碎碎念'
+    text:'✨ '+healingQuotes[Math.floor(Math.random()*healingQuotes.length)],
+    subtext:'💰 今日花销 ¥'+(exp||0).toFixed(2)+'  ✍️ '+jToday+'条碎碎念'
   },{
-    text:(diff<=0?'比上月少花了 ¥'+Math.abs(diff).toFixed(0):'比上月多花了 ¥'+diff.toFixed(0))+' '+(diff<=0?'👍':'📈'),
-    subtext:'本月支出 ¥'+exp.toFixed(2)+'  收入 ¥'+inc.toFixed(2)
+    text:(diff<=0?'👛 比上月少花了 ¥'+Math.abs(diff).toFixed(0):'📈 比上月多花了 ¥'+diff.toFixed(0)),
+    subtext:'🌸 本月支出 ¥'+exp.toFixed(2)+'  🌟 收入 ¥'+inc.toFixed(2)
   },{
-    text:'记账让每一笔花销都有迹可循 ✨',
-    subtext:'记得每天写手账记录生活哦~'
+    text:'🔥 魔法契约达成！',
+    subtext:'坚持记录了 '+todayRecCount+' 天小确幸，继续加油~'
   }];
 
   var track=document.getElementById('carouselTrack');
   var dots=document.getElementById('carouselDots');
   track.innerHTML=''; dots.innerHTML='';
   carouselData.forEach(function(d,i){
-    track.innerHTML+='<div class="carousel-slide"><div><div style="font-size:15px;margin-bottom:4px;">'+d.text+'</div><div style="font-size:12px;opacity:0.85;">'+d.subtext+'</div></div></div>';
-    dots.innerHTML+='<div class="carousel-dot'+(i===0?' active':'')+'" data-idx="'+i+'"></div>';
+    track.innerHTML+='<div class="carousel-slide'+(i===0?' active':'')+'" style="background:'+(i===0?'#FFF0F3':i===1?'#F0F8F4':'#F8F0FB')+'"><div style="font-size:14px;margin-bottom:6px;line-height:1.5;">'+d.text+'</div><div style="font-size:11px;color:var(--text-muted);">'+d.subtext+'</div></div>';
+    dots.innerHTML+='<span class="carousel-dot'+(i===0?' active':'')+'" data-idx="'+i+'">'+(i===0?'💖':'⚪')+'</span>';
   });
   document.querySelectorAll('.carousel-dot').forEach(function(d){
     d.addEventListener('click',function(){ goCarousel(parseInt(this.dataset.idx)); });
   });
-  document.getElementById('carouselTrack').style.transform='translateX(0)';
+  carouselIndex=0; centerCarousel(0);
+
+  // 触摸滑动
+  var wrap=document.getElementById('carouselWrap');
+  var startX=0,deltaX=0,trackEl=track;
+  wrap.onpointerdown=function(e){startX=e.clientX;wrap.setPointerCapture(e.pointerId);};
+  wrap.onpointermove=function(e){if(startX){deltaX=e.clientX-startX;centerCarousel(carouselIndex);trackEl.style.transition='none';var ox=parseFloat(trackEl.dataset.ox||0);trackEl.style.transform='translateX('+(ox+deltaX)+'px)';}};
+  wrap.onpointerup=function(){trackEl.style.transition='transform 0.45s cubic-bezier(0.175,0.885,0.32,1.275)';if(Math.abs(deltaX)>40){goCarousel(deltaX>0?carouselIndex-1:carouselIndex+1);}else{centerCarousel(carouselIndex);}startX=0;};
+}
+function centerCarousel(idx){
+  if(idx<0) idx=0; if(idx>=carouselData.length) idx=carouselData.length-1;
+  carouselIndex=idx;
+  var wrapW=document.getElementById('carouselWrap').offsetWidth||360;
+  var slideW=wrapW*0.85;
+  var offset=-(idx*slideW)+(wrapW/2-slideW/2);
+  var track=document.getElementById('carouselTrack');
+  track.style.transform='translateX('+offset+'px)';
+  track.dataset.ox=offset;
+  document.querySelectorAll('.carousel-slide').forEach(function(s,i){s.classList.toggle('active',i===idx);});
+  document.querySelectorAll('.carousel-dot').forEach(function(d,i){d.classList.toggle('active',i===idx);d.textContent=i===idx?'💖':'⚪';});
 }
 function goCarousel(idx){
-  carouselIndex=idx;
-  document.getElementById('carouselTrack').style.transform='translateX(-'+idx+'00%)';
-  document.querySelectorAll('.carousel-dot').forEach(function(d,i){d.classList.toggle('active',i===idx);});
+  if(idx<0) idx=0; if(idx>=carouselData.length) idx=carouselData.length-1;
+  carouselIndex=idx; centerCarousel(idx);
 }
 function autoCarousel(){
   if(!document.getElementById('page-home').classList.contains('active')) return;
-  carouselIndex=(carouselIndex+1)%carouselData.length; goCarousel(carouselIndex);
+  carouselIndex=(carouselIndex+1)%carouselData.length; centerCarousel(carouselIndex);
 }
 
 function refreshHome(){
