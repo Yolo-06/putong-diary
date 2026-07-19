@@ -256,21 +256,32 @@ body {
   outline: none; transition: border 0.2s;
 }
 .bubble-input:focus { border-style: solid; border-color: #FF9AA2; }
-/* 软糖键盘 */
-.cute-keyboard { margin: 14px -4px 0; }
-.kb-row { display: flex; gap: 6px; margin-bottom: 6px; }
+/* 软糖键盘（CSS Grid 4列×4行） */
+.cute-keyboard {
+  margin: 14px 0 0;
+  display: grid;
+  grid-template-areas:
+    "a1 a2 a3 a4"
+    "b1 b2 b3 b4"
+    "c1 c2 c3 c4"
+    "d1 d2 d3 c4";
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 6px;
+}
+.cute-keyboard .kb-btn[style*="c4"] { grid-area: c4; grid-row: span 2; }
 .kb-btn {
-  flex: 1; padding: 12px 0; border-radius: 12px; border: 2px solid #FFF5F5;
+  padding: 14px 0; border-radius: 12px; border: 2px solid #FFF5F5;
   background: #FFFFFF; font-size: 17px; font-weight: 700; color: var(--text);
   cursor: pointer; font-family: inherit; box-shadow: 0 4px 0 #FFD3B6;
-  transition: all 0.1s; user-select: none;
+  transition: all 0.1s; user-select: none; display: flex;
+  align-items: center; justify-content: center;
 }
 .kb-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #FFD3B6; }
-.kb-fn { background: #FFF0F3; color: #C06070; font-size: 16px; box-shadow: 0 4px 0 #FFD3B6; }
+.kb-fn { background: #FFF0F3; color: #C06070; font-size: 16px; }
 .kb-save {
   background: linear-gradient(135deg, #FFB7C5, #FF9AA2); color: white;
   font-size: 12px; line-height: 1.4; box-shadow: 0 4px 0 #E88A95;
-  flex: 1.2;
 }
 .kb-save:active { box-shadow: 0 0 0 #E88A95; }
 
@@ -621,9 +632,7 @@ body {
   <div class="page" id="page-add">
     <!-- 上半部分：蜜桃粉弧形区 -->
     <div class="add-pink-zone">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 0;">
-        <span style="color:white;font-weight:600;font-size:14px;">✨ 仙女今天花了...</span>
-        <!-- 花瓣类型切换 -->
+      <div style="display:flex;justify-content:center;align-items:center;padding:14px 18px 0;">
         <div class="petal-toggle">
           <button class="petal-btn active" data-type="expense" onclick="switchType('expense')">🌸 支出</button>
           <button class="petal-btn" data-type="income" onclick="switchType('income')">🌟 收入</button>
@@ -643,9 +652,12 @@ body {
 
     <!-- 下半部分：白底卡片区（弧形覆盖） -->
     <div class="add-white-zone">
-      <!-- 分类圆糖网格 -->
-      <div class="form-label" style="margin-bottom:8px;">👛 钱钱去哪了？</div>
-      <div class="cat-candy-grid" id="catCandyGrid"></div>
+      <!-- 分类（默认折叠） -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;" onclick="toggleCatSection()">
+        <span class="form-label" style="margin:0;">👛 钱钱去哪了？</span>
+        <span style="font-size:12px;color:var(--text-muted);" id="catToggleIcon">▼ 展开</span>
+      </div>
+      <div class="cat-candy-grid" id="catCandyGrid" style="display:none;"></div>
 
       <div class="form-group">
         <select class="form-select" id="cat2Select"><option value="">📁 具体是啥</option></select>
@@ -664,31 +676,23 @@ body {
       </div>
       <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotos(this)">
 
-      <!-- 软糖数字键盘 -->
+      <!-- 软糖数字键盘（CSS Grid） -->
       <div class="cute-keyboard" id="cuteKeyboard">
-        <div class="kb-row">
-          <button class="kb-btn" onclick="kbInput('1')">1</button>
-          <button class="kb-btn" onclick="kbInput('2')">2</button>
-          <button class="kb-btn" onclick="kbInput('3')">3</button>
-          <button class="kb-btn kb-fn" onclick="kbBack()">⌫</button>
-        </div>
-        <div class="kb-row">
-          <button class="kb-btn" onclick="kbInput('4')">4</button>
-          <button class="kb-btn" onclick="kbInput('5')">5</button>
-          <button class="kb-btn" onclick="kbInput('6')">6</button>
-          <button class="kb-btn kb-fn" onclick="document.getElementById('dateInput').showPicker()">📅</button>
-        </div>
-        <div class="kb-row">
-          <button class="kb-btn" onclick="kbInput('7')">7</button>
-          <button class="kb-btn" onclick="kbInput('8')">8</button>
-          <button class="kb-btn" onclick="kbInput('9')">9</button>
-          <button class="kb-btn kb-save" onclick="addRecord()" rowspan="2">💖<br>塞进<br>钱包</button>
-        </div>
-        <div class="kb-row">
-          <button class="kb-btn" onclick="kbInput('.')">.</button>
-          <button class="kb-btn" onclick="kbInput('0')">0</button>
-          <button class="kb-btn" onclick="kbInput('+')">+</button>
-        </div>
+        <button class="kb-btn" style="grid-area:a1" onclick="kbInput('1')">1</button>
+        <button class="kb-btn" style="grid-area:a2" onclick="kbInput('2')">2</button>
+        <button class="kb-btn" style="grid-area:a3" onclick="kbInput('3')">3</button>
+        <button class="kb-btn kb-fn" style="grid-area:a4" onclick="kbBack()">⌫</button>
+        <button class="kb-btn" style="grid-area:b1" onclick="kbInput('4')">4</button>
+        <button class="kb-btn" style="grid-area:b2" onclick="kbInput('5')">5</button>
+        <button class="kb-btn" style="grid-area:b3" onclick="kbInput('6')">6</button>
+        <button class="kb-btn kb-fn" style="grid-area:b4" onclick="document.getElementById('dateInput').showPicker()">📅</button>
+        <button class="kb-btn" style="grid-area:c1" onclick="kbInput('7')">7</button>
+        <button class="kb-btn" style="grid-area:c2" onclick="kbInput('8')">8</button>
+        <button class="kb-btn" style="grid-area:c3" onclick="kbInput('9')">9</button>
+        <button class="kb-btn kb-save" style="grid-area:c4" onclick="addRecord()">💖<br>塞进<br>钱包</button>
+        <button class="kb-btn" style="grid-area:d1" onclick="kbInput('.')">.</button>
+        <button class="kb-btn" style="grid-area:d2" onclick="kbInput('0')">0</button>
+        <button class="kb-btn" style="grid-area:d3" onclick="kbInput('+')">+</button>
       </div>
     </div>
   </div>
@@ -1067,7 +1071,7 @@ function switchPage(name){
   if(name==='home') refreshHome();
   if(name==='bills') refreshListPage();
   if(name==='heal') refreshHealPage();
-  if(name==='add'){ refreshCatCandy(); resetKb(); }
+  if(name==='add'){ if(catExpanded) refreshCatCandy(); resetKb(); document.getElementById('selectedCatBadge').style.display='none'; }
 }
 
 // ==================== Toast ====================
@@ -1392,6 +1396,15 @@ function openTimeMachine(){
 
 var currentAddPhotos=[];
 
+// 分类折叠
+var catExpanded=false;
+function toggleCatSection(){
+  catExpanded=!catExpanded;
+  document.getElementById('catCandyGrid').style.display=catExpanded?'grid':'none';
+  document.getElementById('catToggleIcon').textContent=catExpanded?'▲ 收起':'▼ 展开';
+  if(catExpanded) refreshCatCandy();
+}
+
 // 分类圆糖渲染
 function refreshCatCandy(){
   var grid=document.getElementById('catCandyGrid');
@@ -1504,7 +1517,7 @@ function quickAdd(cat1,cat2,icon){
   selectedCat1=cat1;
   document.getElementById('selectedCatBadge').textContent=getCatAlias(cat1);
   document.getElementById('selectedCatBadge').style.display='inline-block';
-  refreshCatCandy();
+  if(!catExpanded) toggleCatSection(); else refreshCatCandy();
   updateCat2Options(cat1);
   document.getElementById('cat2Select').value=cat2;
   resetKb();
