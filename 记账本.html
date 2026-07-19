@@ -177,16 +177,20 @@ body {
 }
 .amount-input:focus { border-bottom-color: var(--pink); }
 
-/* 分类网格 */
-.cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
-.cat-grid-item {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 10px 4px; border-radius: var(--radius-xs); border: 2px solid transparent;
+/* 分类标签（横向滚动） */
+.cat-tag {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 10px 14px; border-radius: 20px; border: 2px solid var(--border);
   cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text-secondary);
-  transition: all 0.15s; background: var(--card);
+  transition: all 0.15s; background: var(--card); white-space: nowrap;
+  flex-shrink: 0; min-width: 56px;
 }
-.cat-grid-item .cgi-icon { font-size: 22px; }
-.cat-grid-item.selected { border-color: var(--pink); background: var(--pink-light); color: #C06070; }
+.cat-tag .cgi-icon { font-size: 20px; }
+.cat-tag.selected { border-color: var(--pink); background: var(--pink-light); color: #C06070; }
+/* 类型切换 */
+.type-btn.active { border-width: 2px; }
+.type-btn[data-type="expense"].active { background: var(--pink-light); border-color: var(--pink); color: #C06070; }
+.type-btn[data-type="income"].active { background: var(--mint-light); border-color: var(--mint); color: #3D7A5F; }
 
 /* 表单 */
 .form-group { margin-bottom: 12px; }
@@ -500,17 +504,25 @@ body {
   <!-- ====== 页面2：记账 ====== -->
   <div class="page" id="page-add">
     <div class="card">
-      <div class="amount-section">
-        <span class="currency">💰 吐出硬币：</span>
-        <input type="number" class="amount-input" id="amountInput" placeholder="0.00" step="0.01" min="0">
+      <!-- 支出/收入切换 -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;" id="typeToggle">
+        <button class="type-btn active" data-type="expense" onclick="switchType('expense')" style="flex:1;padding:12px;border-radius:16px;border:2px solid var(--pink);background:var(--pink-light);color:#C06070;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">💸 支出</button>
+        <button class="type-btn" data-type="income" onclick="switchType('income')" style="flex:1;padding:12px;border-radius:16px;border:2px solid transparent;background:var(--mint-light);color:#3D7A5F;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">💰 收入</button>
       </div>
 
+      <!-- 分类：滚动标签式 -->
       <div class="form-label">👛 钱钱花在哪了？</div>
-      <div class="cat-grid" id="catGrid"></div>
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none;" id="catTags">
+      </div>
 
       <div class="form-group">
         <label class="form-label">📁 具体是啥</label>
         <select class="form-select" id="cat2Select"><option value="">请先选择一级分类</option></select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">💰 金额</label>
+        <input type="number" class="form-input" id="amountInput" placeholder="0.00" step="0.01" min="0" style="font-size:22px;font-weight:700;text-align:center;">
       </div>
 
       <div class="form-group">
@@ -822,7 +834,7 @@ function init(){
   var now=new Date();
   var wd=['日','一','二','三','四','五','六'];
   document.getElementById('dateInput').value=formatDate(now);
-  refreshCatGrid();
+  refreshCatTags();
   document.getElementById('cat1Select')&&updateCat2Options('');
   buildCarousel();
   refreshHome();
@@ -1124,23 +1136,38 @@ function deleteJournal(jid){
 
 var currentAddPhotos=[];
 
-function refreshCatGrid(){
-  var grid=document.getElementById('catGrid');
+// 渲染分类标签（横向滚动）
+function refreshCatTags(){
+  var container=document.getElementById('catTags');
   var html=''; var keys=Object.keys(categories);
+  // 如果是收入模式，默认选中收入分类
+  if(recordType==='income'&&!selectedCat1) selectedCat1='💰 收入';
+  // 过滤：支出模式不显示收入分类，收入模式只显示收入分类
   keys.forEach(function(cat){
+    if(recordType==='expense'&&cat==='💰 收入') return;
+    if(recordType==='income'&&cat!=='💰 收入') return;
     var color=catColors[cat]||'#64748B';
     var icon=cat.replace(/[^一-龥]/g,'').slice(0,1);
     var alias=getCatAlias(cat);
-    html+='<div class="cat-grid-item'+(selectedCat1===cat?' selected':'')+'" data-cat="'+escapeHtml(cat)+'" onclick="selectCat1(this,\''+escapeHtml(cat)+'\')" style="--color:'+color+'">'+
-      '<span class="cgi-icon" style="background:'+color+'20;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;">'+icon+'</span>'+
+    html+='<div class="cat-tag'+(selectedCat1===cat?' selected':'')+'" data-cat="'+escapeHtml(cat)+'" onclick="selectCat1(this,\''+escapeHtml(cat)+'\')">'+
+      '<span class="cgi-icon">'+icon+'</span>'+
       '<span>'+alias+'</span></div>';
   });
-  grid.innerHTML=html;
+  container.innerHTML=html;
+}
+
+// 支出/收入切换
+var recordType='expense';
+function switchType(type){
+  recordType=type; selectedCat1=''; updateCat2Options('');
+  document.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelector('.type-btn[data-type="'+type+'"]').classList.add('active');
+  refreshCatTags();
 }
 
 function selectCat1(el,cat){
   selectedCat1=cat;
-  document.querySelectorAll('.cat-grid-item').forEach(function(i){i.classList.remove('selected');});
+  document.querySelectorAll('.cat-tag').forEach(function(i){i.classList.remove('selected');});
   el.classList.add('selected');
   updateCat2Options(cat);
 }
@@ -1194,8 +1221,12 @@ function refreshPhotoArea(){
 // 快捷记账
 function quickAdd(cat1,cat2,icon){
   switchPage('add');
+  recordType=(cat1==='💰 收入')?'income':'expense';
+  document.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove('active');});
+  var btn=document.querySelector('.type-btn[data-type="'+recordType+'"]');
+  if(btn) btn.classList.add('active');
   selectedCat1=cat1;
-  refreshCatGrid();
+  refreshCatTags();
   updateCat2Options(cat1);
   document.getElementById('cat2Select').value=cat2;
   document.getElementById('amountInput').focus();
@@ -1223,7 +1254,7 @@ function addRecord(){
   var record={
     id:Date.now(), amount:amount, cat1:cat1, cat2:cat2,
     date:date, note:note||'',
-    type:cat1==='💰 收入'?'income':'expense',
+    type:recordType,
     photos:currentAddPhotos.slice()
   };
 
@@ -1439,7 +1470,7 @@ function addCatMajor(){
   if(categories[name]){showToast('该大类已存在','error');return;}
   userCategories[name]={subs:[],color:userColorOptions[Math.floor(Math.random()*userColorOptions.length)]};
   saveUserCategories(); userCategories=loadUserCategories(); rebuildCategories();
-  refreshCatGrid(); showSettingsCatManage(); showToast('大类「'+name+'」已创建','success');
+  refreshCatTags(); showSettingsCatManage(); showToast('大类「'+name+'」已创建','success');
 }
 
 function editCatMajor(catName){
@@ -1450,13 +1481,13 @@ function editCatMajor(catName){
   var saved=userCategories[catName]; delete userCategories[catName]; userCategories[newName]=saved;
   records.forEach(function(r){if(r.cat1===catName)r.cat1=newName;});
   saveUserCategories(); saveRecords(records); userCategories=loadUserCategories(); rebuildCategories();
-  refreshCatGrid(); showSettingsCatManage(); showToast('大类已更新','success');
+  refreshCatTags(); showSettingsCatManage(); showToast('大类已更新','success');
 }
 
 function deleteCatMajor(catName){
   if(!confirm('确定要删除大类「'+catName+'」吗？\n已有记录不会被删除。')) return;
   delete userCategories[catName]; saveUserCategories(); userCategories=loadUserCategories(); rebuildCategories();
-  refreshCatGrid(); showSettingsCatManage(); showToast('大类已删除','success');
+  refreshCatTags(); showSettingsCatManage(); showToast('大类已删除','success');
 }
 </script>
 

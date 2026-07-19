@@ -154,6 +154,7 @@ test('addRecord - 正常记录', () => {
 test('addRecord - 收入类型识别', () => {
   win.saveRecords([]); win.records = [];
   doc.getElementById('amountInput').value = '5000';
+  win.recordType = 'income';  // V2：先切到收入模式
   win.selectedCat1 = '💰 收入';
   win.updateCat2Options('💰 收入');
   doc.getElementById('cat2Select').value = '工资薪水';
