@@ -1364,10 +1364,15 @@ function addRecord(){
   };
 
   records.unshift(record); saveRecords(records);
+  // 重置表单
   document.getElementById('amountInput').value='';
+  document.getElementById('noteInput').value='';
+  selectedCat1=''; updateCat2Options('');
+  var text=document.getElementById('catPickerText');
+  text.textContent='点这里选分类~'; text.style.color='var(--text-muted)'; text.style.fontWeight='normal';
   currentAddPhotos=[]; refreshPhotoArea();
   showToast('记录成功！','success'); refreshHome(); refreshListPage();
-  spawnCoinRain(); // 软糖落雨特效
+  spawnCoinRain();
   return record;
 }
 
@@ -1437,9 +1442,15 @@ function shiftListMonth(d){
 function toggleChartView(){
   showChart=!showChart;
   var sec=document.getElementById('chartSection');
+  var list=document.getElementById('recordList');
   var btn=document.getElementById('chartToggleBtn');
-  if(showChart){sec.classList.add('show');btn.textContent='📋 账单';drawCharts();}
-  else {sec.classList.remove('show');btn.textContent='📊 魔法统计';}
+  if(showChart){
+    sec.classList.add('show'); list.style.display='none';
+    btn.textContent='📋 账单'; drawCharts();
+  } else {
+    sec.classList.remove('show'); list.style.display='';
+    btn.textContent='📊 魔法统计';
+  }
 }
 
 // ==================== 图表绘制 ====================
