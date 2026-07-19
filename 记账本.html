@@ -1692,7 +1692,7 @@ function addRecord(){
   showToast('记录成功！','success'); refreshHome(); refreshListPage();
   spawnCoinRain();
   var pet=document.getElementById('desktopPet');
-  if(pet){pet.textContent='💰';setTimeout(function(){pet.textContent='🐱';},1500);}
+  if(pet){petBubble('💰');}
   // 弹出猫咪邀请
   setTimeout(function(){document.getElementById('catInviteModal').style.display='flex';},800);
   return record;
@@ -2056,30 +2056,70 @@ function openBlindBox(){
 }
 
 // ==================== 电子桌宠 ====================
+var petImg=localStorage.getItem('jizhangben_petimg')||'';
 function initPet(){
   var pet=document.createElement('div');
   pet.id='desktopPet';
-  pet.style.cssText='position:fixed;right:16px;bottom:90px;font-size:36px;z-index:150;cursor:pointer;transition:transform 0.3s var(--bounce);animation:petFloat 3s ease-in-out infinite;';
-  pet.textContent='🐱';
-  pet.title='摸摸我~';
+  pet.style.cssText='position:fixed;right:8px;bottom:85px;width:56px;height:56px;z-index:150;cursor:pointer;transition:transform 0.3s var(--bounce);animation:petFloat 3s ease-in-out infinite;display:flex;align-items:center;justify-content:center;';
+  updatePetDisplay(pet);
+  pet.title='长按换皮肤~点我聊天~';
+  // 点击：聊天
   pet.onclick=function(){
     var msgs=['今天仙女也很棒，贴贴～🥰','记账的宝宝最可爱了！💖','摸摸头，好运+1 🍀','你已经是记账大师啦！🌟','累了就休息一下哦~ ☁️'];
-    var msg=msgs[Math.floor(Math.random()*msgs.length)];
     pet.style.transform='scale(1.3) rotate(-10deg)';
     setTimeout(function(){pet.style.transform='';},300);
-    showToast(msg,'success');
+    showToast(msgs[Math.floor(Math.random()*msgs.length)],'success');
   };
+  // 长按：换皮肤
+  var longPressTimer;
+  pet.onpointerdown=function(){longPressTimer=setTimeout(function(){changePetSkin();},800);};
+  pet.onpointerup=function(){clearTimeout(longPressTimer);};
+  pet.onpointerleave=function(){clearTimeout(longPressTimer);};
   document.body.appendChild(pet);
+}
+function updatePetDisplay(pet){
+  if(!pet) pet=document.getElementById('desktopPet'); if(!pet) return;
+  if(petImg){ pet.innerHTML='<img src="'+petImg+'" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--pink);box-shadow:0 2px 8px rgba(255,183,197,0.3);">'; }
+  else { pet.innerHTML='<span style="font-size:32px;">🐱</span>'; }
+}
+function changePetSkin(){
+  var input=document.createElement('input');
+  input.type='file'; input.accept='image/*';
+  input.onchange=function(){
+    var file=input.files[0]; if(!file) return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image(); img.onload=function(){
+        var canvas=document.createElement('canvas');
+        var s=Math.min(img.width,img.height);
+        canvas.width=200; canvas.height=200;
+        var ctx=canvas.getContext('2d');
+        ctx.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,200,200);
+        petImg=canvas.toDataURL('image/jpeg',0.7);
+        localStorage.setItem('jizhangben_petimg',petImg);
+        updatePetDisplay();
+        showToast('🐱 换皮肤成功！可爱加倍~','success');
+      }; img.src=e.target.result;
+    }; reader.readAsDataURL(file);
+  }; input.click();
 }
 // 桌宠浮动动画
 var petStyle=document.createElement('style');
 petStyle.textContent='@keyframes petFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}';
 document.head.appendChild(petStyle);
 
-// 超支时桌宠反应（在 refreshHome 预算提醒处触发）
+// 桌宠气泡
+function petBubble(emoji){
+  var pet=document.getElementById('desktopPet'); if(!pet) return;
+  var b=document.createElement('div');
+  b.style.cssText='position:fixed;right:70px;bottom:110px;font-size:24px;z-index:151;animation:petFloat 1s ease-out forwards;pointer-events:none;';
+  b.textContent=emoji;
+  document.body.appendChild(b);
+  setTimeout(function(){b.remove();},1500);
+}
+// 超支时桌宠反应
 function petOverBudget(){
-  var pet=document.getElementById('desktopPet');
-  if(pet){pet.textContent='🥺';setTimeout(function(){pet.textContent='🐱';},2000);}
+  petBubble('🥺');
 }
 
 // 记账成功桌宠丢硬币（在 addRecord 的 spawnCoinRain 后触发）
