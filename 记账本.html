@@ -1649,8 +1649,8 @@ function refreshHealPage(){
   // 数据计算
   var journalCount=journals.length;
   var photoCount=0;
-  journals.forEach(function(j){photoCount+=j.photos.length;});
-  records.forEach(function(r){photoCount+=r.photos.length;});
+  journals.forEach(function(j){photoCount+=(j.photos||[]).length;});
+  records.forEach(function(r){photoCount+=(r.photos||[]).length;});
   var recordDays=new Set(records.map(function(r){return r.date;})).size;
   // 连续记账天数
   var streak=0; var d=new Date();
@@ -1684,8 +1684,8 @@ function refreshHealPage(){
   document.getElementById('healStats').innerHTML=cardHtml;
 
   // 照片回忆墙
-  var allPhotos=[]; journals.forEach(function(j){j.photos.forEach(function(p){allPhotos.push(p);});});
-  records.forEach(function(r){r.photos.forEach(function(p){allPhotos.push(p);});});
+  var allPhotos=[]; journals.forEach(function(j){(j.photos||[]).forEach(function(p){allPhotos.push(p);});});
+  records.forEach(function(r){(r.photos||[]).forEach(function(p){allPhotos.push(p);});});
   // 随机打乱取9张
   for(var i=allPhotos.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=allPhotos[i];allPhotos[i]=allPhotos[j];allPhotos[j]=t;}
   var wallPhotos=allPhotos.slice(0,9);
