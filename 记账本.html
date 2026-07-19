@@ -177,16 +177,37 @@ body {
 }
 .amount-input:focus { border-bottom-color: var(--pink); }
 
-/* 分类标签（横向滚动） */
-.cat-tag {
-  display: inline-flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 10px 14px; border-radius: 20px; border: 2px solid var(--border);
-  cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text-secondary);
-  transition: all 0.15s; background: var(--card); white-space: nowrap;
-  flex-shrink: 0; min-width: 56px; user-select: none;
+/* 分类选择按钮 */
+.cat-picker-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px; border-radius: var(--radius-sm); border: 1.5px dashed var(--pink);
+  background: var(--pink-light); cursor: pointer; font-size: 14px;
+  color: var(--text); margin-bottom: 14px; transition: all 0.15s;
 }
-.cat-tag .cgi-icon { font-size: 20px; }
-.cat-tag.selected { border-color: var(--pink); background: var(--pink-light); color: #C06070; }
+.cat-picker-btn:active { background: #FFE0E6; transform: scale(0.98); }
+
+/* 分类选择弹窗 */
+.cat-picker-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 350;
+  display: none; align-items: flex-end; justify-content: center;
+}
+.cat-picker-overlay.show { display: flex; }
+.cat-picker-panel {
+  background: var(--card); border-radius: 28px 28px 0 0; width: 100%;
+  max-width: 414px; max-height: 65vh; overflow-y: auto; padding: 20px 16px 30px;
+  animation: fadeUp 0.3s ease;
+}
+.cat-picker-panel .cp-title { text-align: center; font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+.cat-picker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.cat-picker-item {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 14px 8px; border-radius: 18px; border: 2px solid var(--border);
+  cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text-secondary);
+  transition: all 0.15s; background: var(--card);
+}
+.cat-picker-item:active { transform: scale(0.94); }
+.cat-picker-item.selected { border-color: var(--pink); background: var(--pink-light); color: #C06070; }
+.cat-picker-item .cpi-icon { font-size: 24px; }
 /* 类型切换 */
 .type-btn.active { border-width: 2px; }
 .type-btn[data-type="expense"].active { background: var(--pink-light); border-color: var(--pink); color: #C06070; }
@@ -510,9 +531,11 @@ body {
         <button class="type-btn" data-type="income" onclick="switchType('income')" style="flex:1;padding:12px;border-radius:16px;border:2px solid transparent;background:var(--mint-light);color:#3D7A5F;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">💰 收入</button>
       </div>
 
-      <!-- 分类：滚动标签式 -->
-      <div class="form-label">👛 钱钱花在哪了？</div>
-      <div style="display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px;-webkit-overflow-scrolling:touch;" id="catTags">
+      <!-- 分类：弹窗选择式 -->
+      <div class="form-label" style="margin-bottom:6px;">👛 钱钱花在哪了？</div>
+      <div class="cat-picker-btn" onclick="openCatPicker()" id="catPickerBtn">
+        <span id="catPickerText" style="color:var(--text-muted);">点这里选分类~</span>
+        <span style="font-size:16px;">▶</span>
       </div>
 
       <div class="form-group">
@@ -545,6 +568,14 @@ body {
 
       <button class="btn btn-primary" onclick="addRecord()">💖 塞进小钱包</button>
       <button class="btn btn-mint" style="margin-top: 10px;" onclick="addRecordAndJournal()">📝 顺便写手账</button>
+    </div>
+  </div>
+
+  <!-- ====== 分类选择弹窗 ====== -->
+  <div class="cat-picker-overlay" id="catPickerOverlay" onclick="closeCatPicker(event)">
+    <div class="cat-picker-panel" id="catPickerPanel" onclick="event.stopPropagation()">
+      <div class="cp-title">👛 钱钱花在哪了？</div>
+      <div class="cat-picker-grid" id="catPickerGrid"></div>
     </div>
   </div>
 
@@ -834,7 +865,6 @@ function init(){
   var now=new Date();
   var wd=['日','一','二','三','四','五','六'];
   document.getElementById('dateInput').value=formatDate(now);
-  refreshCatTags();
   document.getElementById('cat1Select')&&updateCat2Options('');
   buildCarousel();
   refreshHome();
@@ -857,7 +887,7 @@ function switchPage(name){
   setTimeout(function(){spawnHeart(rect.left+10, rect.top-20);},150);
   if(name==='home') refreshHome();
   if(name==='bills') refreshListPage();
-  if(name==='add'){ refreshCatGrid(); document.getElementById('amountInput').focus(); }
+  if(name==='add'){ document.getElementById('amountInput').focus(); }
 }
 
 // ==================== Toast ====================
@@ -1136,40 +1166,42 @@ function deleteJournal(jid){
 
 var currentAddPhotos=[];
 
-// 渲染分类标签（横向滚动）
-function refreshCatTags(){
-  var container=document.getElementById('catTags');
-  var html=''; var keys=Object.keys(categories);
-  // 如果是收入模式，默认选中收入分类
-  if(recordType==='income'&&!selectedCat1) selectedCat1='💰 收入';
-  // 过滤：支出模式不显示收入分类，收入模式只显示收入分类
+// 分类弹窗
+function openCatPicker(){
+  var grid=document.getElementById('catPickerGrid');
+  var keys=Object.keys(categories); var html='';
   keys.forEach(function(cat){
     if(recordType==='expense'&&cat==='💰 收入') return;
     if(recordType==='income'&&cat!=='💰 收入') return;
     var color=catColors[cat]||'#64748B';
     var icon=cat.replace(/[^一-龥]/g,'').slice(0,1);
     var alias=getCatAlias(cat);
-    html+='<div class="cat-tag'+(selectedCat1===cat?' selected':'')+'" data-cat="'+escapeHtml(cat)+'" onclick="selectCat1(this,\''+escapeHtml(cat)+'\')">'+
-      '<span class="cgi-icon">'+icon+'</span>'+
-      '<span>'+alias+'</span></div>';
+    html+='<div class="cat-picker-item'+(selectedCat1===cat?' selected':'')+'" onclick="pickCat(\''+escapeHtml(cat)+'\')">'+
+      '<span class="cpi-icon">'+icon+'</span><span>'+alias+'</span></div>';
   });
-  container.innerHTML=html;
+  grid.innerHTML=html;
+  document.getElementById('catPickerOverlay').classList.add('show');
+}
+function closeCatPicker(e){
+  if(e&&e.target!==document.getElementById('catPickerOverlay')) return;
+  document.getElementById('catPickerOverlay').classList.remove('show');
+}
+function pickCat(cat){
+  selectedCat1=cat; updateCat2Options(cat);
+  var text=document.getElementById('catPickerText');
+  var alias=getCatAlias(cat);
+  text.textContent=alias; text.style.color='var(--text)'; text.style.fontWeight='600';
+  closeCatPicker();
 }
 
 // 支出/收入切换
 var recordType='expense';
 function switchType(type){
   recordType=type; selectedCat1=''; updateCat2Options('');
+  var text=document.getElementById('catPickerText');
+  text.textContent='点这里选分类~'; text.style.color='var(--text-muted)'; text.style.fontWeight='normal';
   document.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove('active');});
   document.querySelector('.type-btn[data-type="'+type+'"]').classList.add('active');
-  refreshCatTags();
-}
-
-function selectCat1(el,cat){
-  selectedCat1=cat;
-  document.querySelectorAll('.cat-tag').forEach(function(i){i.classList.remove('selected');});
-  el.classList.add('selected');
-  updateCat2Options(cat);
 }
 
 function updateCat2Options(cat1){
@@ -1226,7 +1258,8 @@ function quickAdd(cat1,cat2,icon){
   var btn=document.querySelector('.type-btn[data-type="'+recordType+'"]');
   if(btn) btn.classList.add('active');
   selectedCat1=cat1;
-  refreshCatTags();
+  var text=document.getElementById('catPickerText');
+  text.textContent=getCatAlias(cat1); text.style.color='var(--text)'; text.style.fontWeight='600';
   updateCat2Options(cat1);
   document.getElementById('cat2Select').value=cat2;
   document.getElementById('amountInput').focus();
@@ -1398,7 +1431,7 @@ function closeDeleteModal(){
   deleteTargetId=null; document.getElementById('deleteModal').style.display='none';
 }
 document.getElementById('deleteModal').addEventListener('click',function(e){if(e.target===this)closeDeleteModal();});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeDeleteModal();closeJournalEdit();closeSettings();closeJournalDetail();}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeDeleteModal();closeJournalEdit();closeSettings();closeJournalDetail();closeCatPicker();}});
 document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
   if(deleteTargetId){
     records=records.filter(function(r){return r.id!==deleteTargetId;});
@@ -1470,7 +1503,7 @@ function addCatMajor(){
   if(categories[name]){showToast('该大类已存在','error');return;}
   userCategories[name]={subs:[],color:userColorOptions[Math.floor(Math.random()*userColorOptions.length)]};
   saveUserCategories(); userCategories=loadUserCategories(); rebuildCategories();
-  refreshCatTags(); showSettingsCatManage(); showToast('大类「'+name+'」已创建','success');
+  showSettingsCatManage(); showToast('大类「'+name+'」已创建','success');
 }
 
 function editCatMajor(catName){
@@ -1481,13 +1514,13 @@ function editCatMajor(catName){
   var saved=userCategories[catName]; delete userCategories[catName]; userCategories[newName]=saved;
   records.forEach(function(r){if(r.cat1===catName)r.cat1=newName;});
   saveUserCategories(); saveRecords(records); userCategories=loadUserCategories(); rebuildCategories();
-  refreshCatTags(); showSettingsCatManage(); showToast('大类已更新','success');
+  showSettingsCatManage(); showToast('大类已更新','success');
 }
 
 function deleteCatMajor(catName){
   if(!confirm('确定要删除大类「'+catName+'」吗？\n已有记录不会被删除。')) return;
   delete userCategories[catName]; saveUserCategories(); userCategories=loadUserCategories(); rebuildCategories();
-  refreshCatTags(); showSettingsCatManage(); showToast('大类已删除','success');
+  showSettingsCatManage(); showToast('大类已删除','success');
 }
 </script>
 
