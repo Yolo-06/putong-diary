@@ -745,8 +745,6 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
       <button class="btn btn-sm" style="background:var(--lavender-light);color:#6B5B7B;border-radius:20px;padding:10px 16px;font-size:13px;" onclick="openTimeMachine()">🔮 旧时光</button>
     </div>
 
-    <!-- 手账标签夹 -->
-    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;" id="journalTagsBar"></div>
 
     <!-- 预算提醒 -->
     <div id="budgetReminder" style="display:none;"></div>
@@ -1271,15 +1269,6 @@ function autoCarousel(){
 }
 
 function refreshHome(){
-  // 渲染手账标签夹
-  var tagsEl=document.getElementById('journalTagsBar');
-  if(tagsEl&&tagsEl.children.length===0){
-    var tagsHtml='';
-    journalTagCategories.forEach(function(t){
-      tagsHtml+='<button class="btn btn-sm journal-tag-btn" data-tag="'+t.label+'" style="background:'+t.color+'20;color:'+t.color+';border:2px solid transparent;border-radius:16px;padding:5px 10px;font-size:11px;white-space:nowrap;flex-shrink:0;" onclick="filterJournalsByTag(\''+t.label+'\')">'+t.icon+' '+t.label+'</button>';
-    });
-    tagsEl.innerHTML=tagsHtml;
-  }
   var today=new Date().toISOString().substring(0,10);
   var monthRecords=getMonthRecords(getCurrentMonth());
   var exp=0,inc=0; monthRecords.forEach(function(r){if(r.type==='income')inc+=r.amount;else exp+=r.amount;});
@@ -1293,18 +1282,6 @@ function refreshHome(){
 
   // 今天的手账
   var todayJournals=journals.filter(function(j){return j.date===today;}).sort(function(a,b){return b.id-a.id;});
-  // 标签过滤
-  if(journalFilter&&journalFilter!=='全部'){
-    var kw=journalFilter;
-    todayJournals=todayJournals.filter(function(j){
-      if(j.content.indexOf(kw)>=0) return true;
-      if(j.relatedRecordId){
-        var rel=records.find(function(r){return r.id===j.relatedRecordId;});
-        if(rel&&rel.cat1&&rel.cat1.indexOf(kw)>=0) return true;
-      }
-      return false;
-    });
-  }
   var hj=document.getElementById('homeJournals');
   if(todayJournals.length===0){
     hj.innerHTML='<div class="journal-empty">今天还没有碎碎念哦~<br>点击上方卡片记录吧 ✍️</div>';
@@ -2106,22 +2083,6 @@ function petOverBudget(){
 }
 
 // 记账成功桌宠丢硬币（在 addRecord 的 spawnCoinRain 后触发）
-
-// 手账标签夹
-var journalFilter='';
-var journalTagCategories=[
-  {label:'全部',icon:'📝',color:'#FFB7C5'},
-  {label:'美食',icon:'🍔',color:'#FF9AA2'},
-  {label:'日常',icon:'🌸',color:'#E8D7F1'},
-  {label:'旅行',icon:'✈️',color:'#C7CEEA'},
-  {label:'购物',icon:'🛍️',color:'#FFDAC1'},
-  {label:'心情',icon:'💭',color:'#B7EAD7'},
-];
-function filterJournalsByTag(tag){
-  journalFilter=journalFilter===tag?'':tag;
-  document.querySelectorAll('.journal-tag-btn').forEach(function(b){b.style.borderColor=b.dataset.tag===journalFilter?'var(--pink)':'transparent';});
-  refreshHome();
-}
 
 // ==================== 设置面板 ====================
 
