@@ -1157,18 +1157,17 @@ function buildCarousel(){
   var wrap=document.getElementById('carouselWrap');
   var startX=0,deltaX=0,trackEl=track;
   wrap.onpointerdown=function(e){startX=e.clientX;wrap.setPointerCapture(e.pointerId);};
-  wrap.onpointermove=function(e){if(startX){deltaX=e.clientX-startX;centerCarousel(carouselIndex);trackEl.style.transition='none';var ox=parseFloat(trackEl.dataset.ox||0);trackEl.style.transform='translateX('+(ox+deltaX)+'px)';}};
-  wrap.onpointerup=function(){trackEl.style.transition='transform 0.45s cubic-bezier(0.175,0.885,0.32,1.275)';if(Math.abs(deltaX)>40){goCarousel(deltaX>0?carouselIndex-1:carouselIndex+1);}else{centerCarousel(carouselIndex);}startX=0;};
+  wrap.onpointermove=function(e){if(startX){deltaX=e.clientX-startX;trackEl.style.transition='none';var ox=parseFloat(trackEl.dataset.ox||0);var wrapW=wrap.offsetWidth||360;var pctDelta=(deltaX/wrapW)*100;trackEl.style.transform='translateX('+(ox+pctDelta)+'%)';}};
+  wrap.onpointerup=function(){trackEl.style.transition='transform 0.45s cubic-bezier(0.175,0.885,0.32,1.275)';var wrapW=wrap.offsetWidth||360;if(Math.abs(deltaX/wrapW*100)>15){goCarousel(deltaX>0?carouselIndex-1:carouselIndex+1);}else{centerCarousel(carouselIndex);}startX=0;};
 }
 function centerCarousel(idx){
   if(idx<0) idx=0; if(idx>=carouselData.length) idx=carouselData.length-1;
   carouselIndex=idx;
-  var wrapW=document.getElementById('carouselWrap').offsetWidth||360;
-  var slideW=wrapW*0.85;
-  var offset=-(idx*slideW)+(wrapW/2-slideW/2);
+  // 每张卡占85%宽，居中当前卡：向左偏移 idx*85% + 7.5%（左边距）
+  var pct=-(idx*85)+(100-85)/2;
   var track=document.getElementById('carouselTrack');
-  track.style.transform='translateX('+offset+'px)';
-  track.dataset.ox=offset;
+  track.style.transform='translateX('+pct+'%)';
+  track.dataset.ox=pct;
   document.querySelectorAll('.carousel-slide').forEach(function(s,i){s.classList.toggle('active',i===idx);});
   document.querySelectorAll('.carousel-dot').forEach(function(d,i){d.classList.toggle('active',i===idx);d.textContent=i===idx?'💖':'⚪';});
 }
