@@ -1189,14 +1189,7 @@ function init(){
   // 初始化设置面板显示
   var bd=document.getElementById('budgetDisplay'); if(bd) bd.textContent='¥'+monthlyBudget;
   var ds=document.getElementById('darkModeStatus'); if(ds&&document.body.classList.contains('dark-fairy-mode')) ds.textContent='开 ✨';
-  // 渲染手账标签夹
-  var tagsHtml='';
-  journalTagCategories.forEach(function(t){
-    tagsHtml+='<button class="btn btn-sm journal-tag-btn" data-tag="'+t.label+'" style="background:'+t.color+'20;color:'+t.color+';border:2px solid transparent;border-radius:16px;padding:5px 10px;font-size:11px;white-space:nowrap;flex-shrink:0;" onclick="filterJournalsByTag(\''+t.label+'\')">'+t.icon+' '+t.label+'</button>';
-  });
-  document.getElementById('journalTagsBar').innerHTML=tagsHtml;
 }
-init();
 
 // ==================== 页面切换 ====================
 
@@ -1279,6 +1272,15 @@ function autoCarousel(){
 }
 
 function refreshHome(){
+  // 渲染手账标签夹
+  var tagsEl=document.getElementById('journalTagsBar');
+  if(tagsEl&&tagsEl.innerHTML===''){
+    var tagsHtml='';
+    journalTagCategories.forEach(function(t){
+      tagsHtml+='<button class="btn btn-sm journal-tag-btn" data-tag="'+t.label+'" style="background:'+t.color+'20;color:'+t.color+';border:2px solid transparent;border-radius:16px;padding:5px 10px;font-size:11px;white-space:nowrap;flex-shrink:0;" onclick="filterJournalsByTag(\''+t.label+'\')">'+t.icon+' '+t.label+'</button>';
+    });
+    tagsEl.innerHTML=tagsHtml;
+  }
   var today=new Date().toISOString().substring(0,10);
   var monthRecords=getMonthRecords(getCurrentMonth());
   var exp=0,inc=0; monthRecords.forEach(function(r){if(r.type==='income')inc+=r.amount;else exp+=r.amount;});
@@ -2175,6 +2177,8 @@ function deleteCatMajor(catName){
   delete userCategories[catName]; saveUserCategories(); userCategories=loadUserCategories(); rebuildCategories();
   showSettingsCatManage(); showToast('大类已删除','success');
 }
+
+init();
 </script>
 
 </body>
