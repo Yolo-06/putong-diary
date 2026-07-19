@@ -127,7 +127,7 @@ test('rebuildCategories - 合并自定义', () => {
 console.log('\n✏️ 记账功能测试');
 
 test('addRecord - 空金额应拒绝', () => {
-  doc.getElementById('amountInput').value = '';
+  win.kbAmount = '';
   win.selectedCat1 = '🍽️ 餐饮饮食';
   win.addRecord();
   // 清空records以确保测试独立性
@@ -136,7 +136,7 @@ test('addRecord - 空金额应拒绝', () => {
 
 test('addRecord - 正常记录', () => {
   win.saveRecords([]); win.records = [];
-  doc.getElementById('amountInput').value = '88.50';
+  win.kbAmount = '88.50';
   win.selectedCat1 = '🍽️ 餐饮饮食';
   doc.getElementById('dateInput').value = '2026-07-14';
   doc.getElementById('noteInput').value = '测试午餐';
@@ -153,7 +153,7 @@ test('addRecord - 正常记录', () => {
 
 test('addRecord - 收入类型识别', () => {
   win.saveRecords([]); win.records = [];
-  doc.getElementById('amountInput').value = '5000';
+  win.kbAmount = '5000';
   win.recordType = 'income';  // V2：先切到收入模式
   win.selectedCat1 = '💰 收入';
   win.updateCat2Options('💰 收入');
