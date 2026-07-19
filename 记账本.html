@@ -746,8 +746,7 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
     </div>
 
     <!-- 手账标签夹 -->
-    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;" id="journalTagsBar">
-    </div>
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;" id="journalTagsBar"></div>
 
     <!-- 预算提醒 -->
     <div id="budgetReminder" style="display:none;"></div>
@@ -1274,7 +1273,7 @@ function autoCarousel(){
 function refreshHome(){
   // 渲染手账标签夹
   var tagsEl=document.getElementById('journalTagsBar');
-  if(tagsEl&&tagsEl.innerHTML===''){
+  if(tagsEl&&tagsEl.children.length===0){
     var tagsHtml='';
     journalTagCategories.forEach(function(t){
       tagsHtml+='<button class="btn btn-sm journal-tag-btn" data-tag="'+t.label+'" style="background:'+t.color+'20;color:'+t.color+';border:2px solid transparent;border-radius:16px;padding:5px 10px;font-size:11px;white-space:nowrap;flex-shrink:0;" onclick="filterJournalsByTag(\''+t.label+'\')">'+t.icon+' '+t.label+'</button>';
