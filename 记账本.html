@@ -86,7 +86,8 @@ body {
 /* ========== 底部导航 ========== */
 .tab-bar {
   display: flex; background: var(--card); border-top: 1px solid var(--border);
-  position: sticky; bottom: 0; z-index: 100;
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 414px; z-index: 100;
   height: 64px; padding-bottom: max(0px, env(safe-area-inset-bottom));
   border-radius: 30px 30px 0 0; box-shadow: 0 -4px 20px rgba(255,183,197,0.12);
 }
@@ -211,12 +212,12 @@ body {
 /* ========== 记账页：双色拼盘 ========== */
 .add-pink-zone {
   background: linear-gradient(180deg, #FFB7C5 0%, #FF9AA2 100%);
-  border-radius: 0 0 28px 28px; padding-bottom: 8px;
+  border-radius: 0 0 24px 24px; padding-bottom: 4px;
   margin: -16px -16px 0; position: relative; z-index: 1;
 }
 .add-white-zone {
-  background: var(--card); border-radius: 24px 24px 0 0;
-  margin: -12px -16px 0; padding: 18px 16px 120px;
+  background: var(--card); border-radius: 20px 20px 0 0;
+  margin: -8px -16px 0; padding: 14px 16px 80px;
   position: relative; z-index: 2; box-shadow: 0 -4px 20px rgba(255,183,197,0.15);
 }
 /* 花瓣切换 */
@@ -229,21 +230,21 @@ body {
 .petal-btn.active { background: white; color: #C06070; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
 .petal-btn[data-type="income"].active { color: #3D7A5F; }
 /* 金额展示 */
-.amount-show { text-align: center; padding: 18px 0 8px; }
-.amount-currency { font-size: 28px; font-weight: 700; color: rgba(255,255,255,0.7); }
-.amount-value { font-size: 44px; font-weight: 700; color: white; text-shadow: 2px 2px 0 rgba(0,0,0,0.08); }
-.amount-cursor { font-size: 40px; color: white; animation: blink 1s infinite; }
+.amount-show { text-align: center; padding: 10px 0 4px; }
+.amount-currency { font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.7); }
+.amount-value { font-size: 36px; font-weight: 700; color: white; text-shadow: 2px 2px 0 rgba(0,0,0,0.08); }
+.amount-cursor { font-size: 32px; color: white; animation: blink 1s infinite; }
 @keyframes blink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
-/* 分类圆糖 */
-.cat-candy-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+/* 分类圆糖（紧凑3列） */
+.cat-candy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
 .cat-candy-item {
-  display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px;
   cursor: pointer; font-size: 10px; font-weight: 600; color: var(--text-secondary);
   transition: all 0.2s var(--bounce);
 }
 .cat-candy-item .cc-circle {
-  width: 44px; height: 44px; border-radius: 50%; background: #F5F0F0;
-  display: flex; align-items: center; justify-content: center; font-size: 20px;
+  width: 38px; height: 38px; border-radius: 50%; background: #F5F0F0;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
   transition: all 0.2s var(--bounce);
 }
 .cat-candy-item.selected .cc-circle { transform: scale(1.15) rotate(-3deg); box-shadow: 0 4px 12px rgba(255,181,194,0.4); }
@@ -259,8 +260,8 @@ body {
 .cute-keyboard { margin: 14px -4px 0; }
 .kb-row { display: flex; gap: 6px; margin-bottom: 6px; }
 .kb-btn {
-  flex: 1; padding: 14px 0; border-radius: 14px; border: 2px solid #FFF5F5;
-  background: #FFFFFF; font-size: 18px; font-weight: 700; color: var(--text);
+  flex: 1; padding: 12px 0; border-radius: 12px; border: 2px solid #FFF5F5;
+  background: #FFFFFF; font-size: 17px; font-weight: 700; color: var(--text);
   cursor: pointer; font-family: inherit; box-shadow: 0 4px 0 #FFD3B6;
   transition: all 0.1s; user-select: none;
 }
@@ -620,7 +621,7 @@ body {
   <div class="page" id="page-add">
     <!-- 上半部分：蜜桃粉弧形区 -->
     <div class="add-pink-zone">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 0;">
         <span style="color:white;font-weight:600;font-size:14px;">✨ 仙女今天花了...</span>
         <!-- 花瓣类型切换 -->
         <div class="petal-toggle">
