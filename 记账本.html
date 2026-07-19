@@ -915,7 +915,7 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
     <div class="settings-body">
       <div class="settings-item" onclick="closeSettings();showSettingsCatManage()">🌸 小分类大变身 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="toggleDarkMode()">🌙 梦幻星空模式 <span id="darkModeStatus" style="font-size:12px;color:var(--text-muted);">关</span></div>
-      <div class="settings-item" onclick="setBudget()">💰 变富小预算（当前 ¥'+monthlyBudget+'） <span class="si-arrow">▶</span></div>
+      <div class="settings-item" onclick="setBudget()">💰 变富小预算（当前 <span id="budgetDisplay">¥5000</span>） <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="closeSettings();exportCSV(currentListMonth)">📂 魔法数据导出 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="exportFullBackup()">💾 完整备份（含照片） <span class="si-arrow">▶</span></div>
       <div class="settings-item" style="border:none;">
@@ -1172,6 +1172,9 @@ function init(){
   refreshListPage();
   setInterval(autoCarousel,3500);
   initPet();
+  // 初始化设置面板显示
+  var bd=document.getElementById('budgetDisplay'); if(bd) bd.textContent='¥'+monthlyBudget;
+  var ds=document.getElementById('darkModeStatus'); if(ds&&document.body.classList.contains('dark-fairy-mode')) ds.textContent='开 ✨';
   // 渲染手账标签夹
   var tagsHtml='';
   journalTagCategories.forEach(function(t){
@@ -1907,6 +1910,7 @@ function setBudget(){
   var v=prompt('设置月度预算（元）：',monthlyBudget);
   if(v&&!isNaN(parseFloat(v))&&parseFloat(v)>0){
     monthlyBudget=parseFloat(v); saveBudget(monthlyBudget);
+    var bd=document.getElementById('budgetDisplay'); if(bd) bd.textContent='¥'+monthlyBudget;
     showToast('预算已设为 ¥'+monthlyBudget+' 🎯','success');
     closeSettings(); refreshHome();
   }
