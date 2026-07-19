@@ -515,6 +515,14 @@ body {
       <button class="quick-btn" onclick="quickAdd('🚗 交通出行','公交地铁','🚇')"><span class="qb-icon">🚇</span>贴贴</button>
     </div>
 
+    <!-- 时光机按钮 -->
+    <div style="text-align:center;margin-bottom:14px;">
+      <button class="btn btn-sm" style="background:var(--lavender-light);color:#6B5B7B;border-radius:20px;padding:10px 20px;" onclick="openTimeMachine()">🔮 翻开旧时光</button>
+    </div>
+
+    <!-- 预算提醒 -->
+    <div id="budgetReminder" style="display:none;"></div>
+
     <!-- 小钱包概览 -->
     <div class="card">
       <div class="card-title">🌸 小钱包</div>
@@ -603,6 +611,10 @@ body {
         <div class="card-title">📈 变富小趋势</div>
         <div id="trendChart" style="overflow-x:auto;"></div>
       </div>
+      <div class="card">
+        <div class="card-title">🌈 本月心情晴雨表</div>
+        <div id="moodChart"></div>
+      </div>
     </div>
   </div>
 
@@ -628,7 +640,8 @@ body {
     </div>
     <div class="settings-body">
       <div class="settings-item" onclick="closeSettings();showSettingsCatManage()">🌸 小分类大变身 <span class="si-arrow">▶</span></div>
-      <div class="settings-item" onclick="exportCSV(currentListMonth)">📂 魔法数据导出 <span class="si-arrow">▶</span></div>
+      <div class="settings-item" onclick="setBudget()">💰 变富小预算（当前 ¥'+monthlyBudget+'） <span class="si-arrow">▶</span></div>
+      <div class="settings-item" onclick="closeSettings();exportCSV(currentListMonth)">📂 魔法数据导出 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="exportFullBackup()">💾 完整备份（含照片） <span class="si-arrow">▶</span></div>
       <div class="settings-item" style="border:none;">
         <div style="font-size:12px;color:var(--text-muted);line-height:1.6;padding:10px 0;">
@@ -830,6 +843,19 @@ var healingQuotes = [
   '每一天都值得被温柔记录 🌸',
   '生活需要仪式感，钱钱也是～🍰'
 ];
+
+// 月度预算（默认5000元）
+function loadBudget(){ try{var d=localStorage.getItem('jizhangben_budget');return d?parseFloat(d):5000;}catch(e){return 5000;} }
+function saveBudget(v){ localStorage.setItem('jizhangben_budget',v); }
+var monthlyBudget = loadBudget();
+
+// 预算提醒文案
+function getBudgetTip(exp,budget){
+  var pct=budget>0?(exp/budget*100):0;
+  if(pct>=100) return {level:'over',text:'钱包空空啦！但没关系，花出去的银子都变成了让你快乐的魔法，下个月我们再一起加油鸭！💖'};
+  if(pct>=80) return {level:'warn',text:'贴心提示：小钱包在微微发热啦，接下来的日子要和精致的自己一起开源节流哦～🌸'};
+  return null;
+}
 var editingJournalId = null;
 var showChart = false;
 
@@ -989,6 +1015,16 @@ function refreshHome(){
     hj.innerHTML=jhtml;
   }
 
+  // 预算温柔提醒
+  var tip=getBudgetTip(exp,monthlyBudget);
+  var reminder=document.getElementById('budgetReminder');
+  if(tip){
+    reminder.style.display='block';
+    reminder.innerHTML='<div style="background:'+(tip.level==='over'?'#FFF0F3':'#FFFBEB')+';border:1px solid '+(tip.level==='over'?'#FFB7C5':'#FCD34D')+';border-radius:14px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:'+(tip.level==='over'?'#C06070':'#B45309')+';text-align:center;">'+tip.text+'</div>';
+  } else {
+    reminder.style.display='none';
+  }
+
   buildCarousel();
 }
 
@@ -1042,6 +1078,21 @@ function spawnConfetti(){
       document.body.appendChild(e);
       setTimeout(function(){e.remove();},2000);
     },i*80);
+  }
+}
+
+// 软糖落雨（记账保存成功时）
+function spawnCoinRain(){
+  var emojis=['💖','⭐','💰','🌸','✨','🍀','💗','🎀'];
+  for(var i=0;i<15;i++){
+    setTimeout(function(){
+      var e=document.createElement('div'); e.className='confetti';
+      e.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+      e.style.left=Math.random()*80+'%'; e.style.top='-10px';
+      e.style.animationDuration=(1+Math.random()*1.5)+'s';
+      document.body.appendChild(e);
+      setTimeout(function(){e.remove();},2000);
+    },i*60);
   }
 }
 
@@ -1160,6 +1211,27 @@ function deleteJournal(jid){
   if(!confirm('确定要删除这条手账吗？')) return;
   journals=journals.filter(function(j){return j.id!==jid;});
   saveJournals(); refreshHome(); showToast('手账已删除','success');
+}
+
+// ==================== 时光机 ====================
+
+function openTimeMachine(){
+  if(journals.length===0){ showToast('还没有手账记录哦，先去写一条吧~ ✍️','error'); return; }
+  var idx=Math.floor(Math.random()*journals.length);
+  var j=journals[idx];
+  var html='<div style="text-align:center;">';
+  html+='<div style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">🔮 时光机带你回到...</div>';
+  html+='<div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;">'+j.date+'</div>';
+  html+='<div class="jd-mood">'+(j.mood||'📝')+'</div>';
+  if(j.sticker) html+='<div style="font-size:24px;">'+j.sticker+'</div>';
+  html+='<div style="font-size:14px;color:var(--text);line-height:1.8;margin:12px 0;">'+escapeHtml(j.content)+'</div>';
+  if(j.photos&&j.photos.length>0){
+    html+='<img class="jd-photo" src="'+j.photos[0]+'" style="max-height:200px;object-fit:cover;">';
+  }
+  html+='<button class="btn btn-sm" style="background:var(--lavender);color:#6B5B7B;margin-top:10px;" onclick="closeJournalDetail();openTimeMachine();">🔄 再翻一张</button>';
+  html+='</div>';
+  document.getElementById('journalDetailBox').innerHTML=html;
+  document.getElementById('journalDetailOverlay').classList.add('show');
 }
 
 // ==================== 记账功能 ====================
@@ -1295,6 +1367,7 @@ function addRecord(){
   document.getElementById('amountInput').value='';
   currentAddPhotos=[]; refreshPhotoArea();
   showToast('记录成功！','success'); refreshHome(); refreshListPage();
+  spawnCoinRain(); // 软糖落雨特效
   return record;
 }
 
@@ -1417,6 +1490,30 @@ function drawCharts(){
   });
   trendHtml+='</svg>';
   document.getElementById('trendChart').innerHTML=trendHtml;
+
+  // 心情晴雨表
+  var monthJournals=journals.filter(function(j){return j.date.substring(0,7)===currentListMonth;});
+  var moodCount={}; var moodNames={'🥰':'超幸福','🐶':'元气','🥺':'委屈','🥱':'困困','🐱':'傲娇','💔':'碎碎念'};
+  monthJournals.forEach(function(j){if(j.mood){moodCount[j.mood]=(moodCount[j.mood]||0)+1;}});
+  var moodList=Object.entries(moodCount).sort(function(a,b){return b[1]-a[1];});
+  var moodHtml='';
+  if(moodList.length===0){
+    moodHtml='<div class="empty-state" style="padding:16px;font-size:13px;">这个月还没有心情记录~<br>去写手账吧 ✍️</div>';
+  } else {
+    var totalMood=moodList.reduce(function(s,e){return s+e[1];},0);
+    var moodColors={'🥰':'#FFB7C5','🐶':'#FFDAC1','🥺':'#C7CEEA','🥱':'#E8D7F1','🐱':'#B7EAD7','💔':'#D5C6E0'};
+    moodList.forEach(function(e){
+      var pct=totalMood>0?(e[1]/totalMood*100):0;
+      var color=moodColors[e[0]]||'#FFB7C5';
+      moodHtml+='<div class="cat-bar-item">'+
+        '<div class="cat-bar-icon" style="background:'+color+'40;font-size:18px;">'+e[0]+'</div>'+
+        '<div class="cat-bar-info"><div class="cat-name">'+(moodNames[e[0]]||e[0])+'</div>'+
+        '<div class="cat-bar-bg"><div class="cat-bar-fill" style="width:'+pct+'%;background:'+color+';"></div></div></div>'+
+        '<div style="font-size:13px;font-weight:700;color:var(--text);">'+e[1]+'天</div>'+
+        '<div class="cat-bar-percent">'+pct.toFixed(0)+'%</div></div>';
+    });
+  }
+  document.getElementById('moodChart').innerHTML=moodHtml;
 }
 
 // ==================== 删除功能 ====================
@@ -1467,6 +1564,16 @@ function exportFullBackup(){
   a.href=url; a.download='记账本_完整备份_'+formatDate(new Date())+'.json';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   showToast('完整备份已导出（含照片和手账）','success');
+}
+
+// 预算设置
+function setBudget(){
+  var v=prompt('设置月度预算（元）：',monthlyBudget);
+  if(v&&!isNaN(parseFloat(v))&&parseFloat(v)>0){
+    monthlyBudget=parseFloat(v); saveBudget(monthlyBudget);
+    showToast('预算已设为 ¥'+monthlyBudget+' 🎯','success');
+    closeSettings(); refreshHome();
+  }
 }
 
 // ==================== 设置面板 ====================
