@@ -578,8 +578,19 @@ body {
 .donut-legend { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; font-size: 11px; }
 .donut-legend span { display: flex; align-items: center; gap: 3px; }
 
-/* ========== 梦幻星空暗黑模式 🌙 ========== */
-body.dark-fairy-mode { background: linear-gradient(180deg, #2D2438 0%, #1A1326 100%); }
+/* ==========================================================================
+   🌙 少女治愈系 - "芋泥星愿"夜间模式
+   ========================================================================== */
+
+body.dark-fairy-mode {
+    background-color: #231B2E !important;
+    background-image:
+        radial-gradient(circle at 20% 10%, rgba(235, 177, 189, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(199, 206, 234, 0.08) 0%, transparent 40%);
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* 1. 卡片：透光毛玻璃 */
 body.dark-fairy-mode .app { background: transparent; }
 body.dark-fairy-mode .card,
 body.dark-fairy-mode .carousel-slide,
@@ -591,26 +602,83 @@ body.dark-fairy-mode .modal-box,
 body.dark-fairy-mode .journal-detail-box,
 body.dark-fairy-mode .settings-panel,
 body.dark-fairy-mode .add-white-zone {
-  background: rgba(255,255,255,0.08) !important;
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: #FFEAA7;
+    background: rgba(49, 38, 66, 0.7) !important;
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(255, 183, 197, 0.12) !important;
+    box-shadow: 0 8px 24px rgba(15, 10, 22, 0.25) !important;
 }
+
+/* 2. 文字分层：主标题带仙光，次要文字低透明 */
 body.dark-fairy-mode .card-title,
 body.dark-fairy-mode .form-label,
-body.dark-fairy-mode .header-title { color: #FFEAA7; }
-body.dark-fairy-mode .tab-bar { background: rgba(30,20,40,0.9) !important; backdrop-filter: blur(12px); border-color: rgba(255,255,255,0.1); }
-body.dark-fairy-mode .tab-item { color: rgba(255,234,167,0.5); }
-body.dark-fairy-mode .tab-item.active { color: #FFB7C5; }
-body.dark-fairy-mode .kb-btn { background: rgba(255,255,255,0.1); color: #FFEAA7; border-color: rgba(255,255,255,0.08); box-shadow: 0 4px 0 rgba(255,255,255,0.1); }
-body.dark-fairy-mode .kb-btn:active { box-shadow: 0 0 0 rgba(255,255,255,0.1); }
-body.dark-fairy-mode .bubble-input { background: rgba(255,255,255,0.06); color: #FFEAA7; border-color: rgba(255,183,197,0.3); }
-body.dark-fairy-mode .form-select, body.dark-fairy-mode .form-input { background: rgba(255,255,255,0.06); color: #FFEAA7; border-color: rgba(255,255,255,0.1); }
-body.dark-fairy-mode .add-pink-zone { background: linear-gradient(180deg, #3D2A4A, #2D1A3A); }
-body.dark-fairy-mode .cat-picker-btn { background: rgba(255,255,255,0.06); }
-body.dark-fairy-mode .quick-btn { color: #FFEAA7; }
-body.dark-fairy-mode .journal-entry-card { background: rgba(255,183,197,0.15); }
-body.dark-fairy-mode .settings-overlay { background: rgba(0,0,0,0.6); }
+body.dark-fairy-mode .header-title,
+body.dark-fairy-mode .amount-value { color: #FFFFFF !important; text-shadow: 0 2px 8px rgba(235, 177, 189, 0.3); }
+body.dark-fairy-mode .amount-cursor { color: rgba(255,255,255,0.6); }
+body.dark-fairy-mode .record-note,
+body.dark-fairy-mode .j-time,
+body.dark-fairy-mode .hs-label,
+body.dark-fairy-mode .hs-sub,
+body.dark-fairy-mode .sum-label { color: rgba(255, 255, 255, 0.5) !important; }
+body.dark-fairy-mode .journal-card .j-content { color: rgba(255, 255, 255, 0.85); }
+
+/* 3. 按钮与高亮元素 */
+body.dark-fairy-mode .btn-primary {
+    background: linear-gradient(135deg, #EBB1BD 0%, #D69CA8 100%) !important;
+    color: #231B2E !important;
+    box-shadow: 0 6px 16px rgba(235, 177, 189, 0.25) !important;
+}
+body.dark-fairy-mode .cat-candy-item.selected { color: #EBB1BD; }
+body.dark-fairy-mode .sum-value.income,
+body.dark-fairy-mode .record-amount.income { color: #9EC4B7 !important; }
+body.dark-fairy-mode #budgetReminder > div {
+    background: rgba(245, 230, 196, 0.12) !important;
+    border: 1px dashed rgba(245, 230, 196, 0.3) !important;
+    color: #F5E6C4 !important;
+}
+
+/* 4. 软糖键盘夜间皮肤 */
+body.dark-fairy-mode .kb-btn {
+    background: #3D3053 !important; border: 2px solid #4A3B65 !important;
+    color: rgba(255, 255, 255, 0.9) !important; box-shadow: 0 4px 0 #1A1326 !important;
+}
+body.dark-fairy-mode .kb-btn:active { box-shadow: 0 0 0 #1A1326 !important; }
+body.dark-fairy-mode .kb-fn { background: #4A3B65 !important; color: #EBB1BD !important; }
+body.dark-fairy-mode .kb-save {
+    background: linear-gradient(135deg, #FFB7C5, #EBB1BD) !important;
+    animation: nightPulse 2s infinite ease-in-out;
+}
+@keyframes nightPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 183, 197, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 183, 197, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 183, 197, 0); }
+}
+
+/* 5. 底部导航与指示点 */
+body.dark-fairy-mode .tab-bar {
+    background: rgba(35, 27, 46, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+body.dark-fairy-mode .tab-item { color: rgba(255, 234, 167, 0.4); }
+body.dark-fairy-mode .tab-item.active { color: #EBB1BD; }
+body.dark-fairy-mode .carousel-dot.active { color: #EBB1BD !important; }
+
+/* 6. 其他组件 */
+body.dark-fairy-mode .add-pink-zone { background: linear-gradient(180deg, #3D3053, #2D2040); }
+body.dark-fairy-mode .bubble-input { background: rgba(49,38,66,0.6); color: rgba(255,255,255,0.85); border-color: rgba(235,177,189,0.3); }
+body.dark-fairy-mode .form-select, body.dark-fairy-mode .form-input { background: rgba(49,38,66,0.6); color: rgba(255,255,255,0.85); border-color: rgba(255,255,255,0.1); }
+body.dark-fairy-mode .cat-candy-item .cc-circle { background: rgba(255,255,255,0.06); }
+body.dark-fairy-mode .journal-entry-card { background: rgba(235,177,189,0.12); }
+body.dark-fairy-mode .settings-overlay { background: rgba(0,0,0,0.7); }
+body.dark-fairy-mode .petal-btn.active { background: rgba(49,38,66,0.8); color: #EBB1BD; }
+body.dark-fairy-mode .cat-picker-btn { background: rgba(49,38,66,0.6); }
+body.dark-fairy-mode .quick-btn { color: rgba(255,255,255,0.75); }
+body.dark-fairy-mode .quick-btn:nth-child(1) { background: rgba(235,177,189,0.15); }
+body.dark-fairy-mode .quick-btn:nth-child(2) { background: rgba(158,196,183,0.15); }
+body.dark-fairy-mode .quick-btn:nth-child(3) { background: rgba(199,206,234,0.15); }
+body.dark-fairy-mode .quick-btn:nth-child(4) { background: rgba(235,177,189,0.15); }
+body.dark-fairy-mode .cat-modal-box { background: rgba(49,38,66,0.95) !important; backdrop-filter: blur(16px); }
+body.dark-fairy-mode .modal-overlay { background: rgba(0,0,0,0.5); }
+body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important; }
 
 /* ========== 响应式 ========== */
 @media (max-width: 414px) {
