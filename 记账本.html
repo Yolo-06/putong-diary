@@ -87,8 +87,8 @@ body {
 .tab-bar {
   display: flex; background: var(--card); border-top: 1px solid var(--border);
   position: sticky; bottom: 0; z-index: 100;
-  padding: 6px 0; padding-bottom: max(6px, env(safe-area-inset-bottom));
-  border-radius: 24px 24px 0 0; box-shadow: 0 -2px 12px rgba(180,160,160,0.08);
+  height: 64px; padding-bottom: max(0px, env(safe-area-inset-bottom));
+  border-radius: 30px 30px 0 0; box-shadow: 0 -4px 20px rgba(255,183,197,0.12);
 }
 .tab-item {
   flex: 1; display: flex; flex-direction: column; align-items: center;
@@ -271,8 +271,8 @@ body {
   50% { box-shadow: 0 0 0 8px rgba(255,183,197,0); }
 }
 .amount-input:focus { animation: breathe 2s infinite; border-bottom-color: var(--pink); }
-.btn-primary { width: 100%; background: var(--pink); color: white; box-shadow: 0 4px 12px rgba(255,181,194,0.4); }
-.btn-primary:hover { opacity: 0.9; }
+.btn-primary { width: 100%; background: linear-gradient(135deg, var(--pink), #FF9AA2); color: white; box-shadow: 0 6px 16px rgba(255,112,136,0.3); border-radius: 20px; }
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
 .btn-mint { width: 100%; background: var(--mint); color: #3D7A5F; }
 .btn-sm { padding: 7px 16px; font-size: 13px; border-radius: 12px; }
 .btn-outline { background: white; border: 1.5px solid var(--border); color: var(--text-secondary); }
@@ -457,7 +457,7 @@ body {
   <!-- ====== 顶部栏 ====== -->
   <div class="header">
     <div style="width:36px;"></div>
-    <span class="header-title">📒 记账本</span>
+    <span class="header-title">✨ 噗通日记本</span>
     <button class="header-btn" onclick="openSettings()" title="设置">⚙️</button>
   </div>
 
@@ -473,63 +473,66 @@ body {
     <div class="journal-entry-card" onclick="openJournalEdit()">
       <div class="entry-icon">✍️</div>
       <div class="entry-text">
-        <div class="entry-title">写手账</div>
-        <div class="entry-subtitle">记录今天的小确幸吧~ 📷</div>
+        <div class="entry-title">收集今天的小确幸吧！</div>
+        <div class="entry-subtitle">📷 贴张照片 / 码字</div>
       </div>
     </div>
 
     <!-- 今日手账时间线 -->
-    <div class="timeline-title">📝 今天的手账</div>
+    <div class="timeline-title">🌸 碎碎念时间轴</div>
     <div id="homeJournals"></div>
 
     <!-- 快捷记账 -->
     <div class="quick-actions">
-      <button class="quick-btn" onclick="quickAdd('🍽️ 餐饮饮食','早餐','🍳')"><span class="qb-icon">🍳</span>早餐</button>
-      <button class="quick-btn" onclick="quickAdd('🍽️ 餐饮饮食','零食饮料','☕')"><span class="qb-icon">☕</span>咖啡</button>
-      <button class="quick-btn" onclick="quickAdd('🚗 交通出行','公交地铁','🚇')"><span class="qb-icon">🚇</span>通勤</button>
-      <button class="quick-btn" onclick="quickAdd('🍽️ 餐饮饮食','午餐','🍱')"><span class="qb-icon">🍱</span>午餐</button>
+      <button class="quick-btn" onclick="quickAdd('🍽️ 餐饮饮食','午餐','🍱')"><span class="qb-icon">🍱</span>干饭</button>
+      <button class="quick-btn" onclick="quickAdd('🍽️ 餐饮饮食','零食饮料','☕')"><span class="qb-icon">☕</span>奶茶</button>
+      <button class="quick-btn" onclick="quickAdd('🛒 购物消费','日常百货','🛍️')"><span class="qb-icon">🛍️</span>买买</button>
+      <button class="quick-btn" onclick="quickAdd('🚗 交通出行','公交地铁','🚇')"><span class="qb-icon">🚇</span>贴贴</button>
     </div>
 
-    <!-- 本月概览 -->
-    <div class="card" id="homeOverview"></div>
+    <!-- 小钱包概览 -->
+    <div class="card">
+      <div class="card-title">🌸 小钱包</div>
+      <div id="homeOverview"></div>
+    </div>
   </div>
 
   <!-- ====== 页面2：记账 ====== -->
   <div class="page" id="page-add">
     <div class="card">
       <div class="amount-section">
-        <span class="currency">¥</span>
+        <span class="currency">💰 吐出硬币：</span>
         <input type="number" class="amount-input" id="amountInput" placeholder="0.00" step="0.01" min="0">
       </div>
 
-      <div class="form-label">📂 选择分类</div>
+      <div class="form-label">👛 钱钱花在哪了？</div>
       <div class="cat-grid" id="catGrid"></div>
 
       <div class="form-group">
-        <label class="form-label">📁 二级分类</label>
+        <label class="form-label">📁 具体是啥</label>
         <select class="form-select" id="cat2Select"><option value="">请先选择一级分类</option></select>
       </div>
 
       <div class="form-group">
-        <label class="form-label">📅 日期</label>
+        <label class="form-label">📅 魔法日子</label>
         <input type="date" class="form-input" id="dateInput">
       </div>
 
       <div class="form-group">
-        <label class="form-label">📝 备注</label>
-        <input type="text" class="form-input" id="noteInput" placeholder="随便写点什么..." maxlength="100">
+        <label class="form-label">📝 碎碎念</label>
+        <input type="text" class="form-input" id="noteInput" placeholder="打字小爪爪..." maxlength="100">
       </div>
 
       <div class="form-group">
-        <label class="form-label">📷 照片（可选）</label>
+        <label class="form-label">📷 定格这一刻（最多9张）</label>
         <div class="photo-area" id="photoArea">
           <div class="photo-add" onclick="addPhoto()">＋</div>
         </div>
         <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotos(this)">
       </div>
 
-      <button class="btn btn-primary" onclick="addRecord()">💾 保存记录</button>
-      <button class="btn btn-mint" style="margin-top: 10px;" onclick="addRecordAndJournal()">📝 保存并写手账</button>
+      <button class="btn btn-primary" onclick="addRecord()">💖 塞进小钱包</button>
+      <button class="btn btn-mint" style="margin-top: 10px;" onclick="addRecordAndJournal()">📝 顺便写手账</button>
     </div>
   </div>
 
@@ -539,7 +542,7 @@ body {
       <button class="nav-btn" onclick="shiftListMonth(-1)">◀</button>
       <span class="month-label" id="monthLabel"></span>
       <button class="nav-btn" onclick="shiftListMonth(1)">▶</button>
-      <button class="btn btn-sm" style="background:var(--pink);color:white;margin-left:auto;" onclick="toggleChartView()" id="chartToggleBtn">📊 统计</button>
+      <button class="btn btn-sm" style="background:var(--pink);color:white;margin-left:auto;" onclick="toggleChartView()" id="chartToggleBtn">📊 魔法统计</button>
     </div>
 
     <div class="month-summary" id="monthSummary"></div>
@@ -550,11 +553,11 @@ body {
     <!-- 图表视图 -->
     <div class="chart-section" id="chartSection">
       <div class="card">
-        <div class="card-title">📊 支出分类占比</div>
+        <div class="card-title">🍰 银子都去哪了？</div>
         <div id="catChart"></div>
       </div>
       <div class="card">
-        <div class="card-title">📈 近6月趋势</div>
+        <div class="card-title">📈 变富小趋势</div>
         <div id="trendChart" style="overflow-x:auto;"></div>
       </div>
     </div>
@@ -563,13 +566,13 @@ body {
   <!-- ====== 底部导航 ====== -->
   <div class="tab-bar">
     <button class="tab-item active" data-page="home" onclick="switchPage('home')">
-      <span class="tab-icon">🏠</span>首页
+      <span class="tab-icon">🐾</span>首页
     </button>
     <button class="tab-item" data-page="add" onclick="switchPage('add')">
       <span class="tab-icon">✏️</span>记账
     </button>
     <button class="tab-item" data-page="bills" onclick="switchPage('bills')">
-      <span class="tab-icon">📋</span>账单
+      <span class="tab-icon">📖</span>日记
     </button>
   </div>
 
@@ -577,12 +580,12 @@ body {
   <div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
   <div class="settings-panel" id="settingsPanel">
     <div class="settings-header">
-      <h3>⚙️ 设置</h3>
+      <h3>⚙️ 少女心配置馆</h3>
       <button class="settings-close" onclick="closeSettings()">✕</button>
     </div>
     <div class="settings-body">
-      <div class="settings-item" onclick="closeSettings();showSettingsCatManage()">📂 分类管理 <span class="si-arrow">▶</span></div>
-      <div class="settings-item" onclick="exportCSV(currentListMonth)">📥 导出本月账单 <span class="si-arrow">▶</span></div>
+      <div class="settings-item" onclick="closeSettings();showSettingsCatManage()">🌸 小分类大变身 <span class="si-arrow">▶</span></div>
+      <div class="settings-item" onclick="exportCSV(currentListMonth)">📂 魔法数据导出 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="exportFullBackup()">💾 完整备份（含照片） <span class="si-arrow">▶</span></div>
       <div class="settings-item" style="border:none;">
         <div style="font-size:12px;color:var(--text-muted);line-height:1.6;padding:10px 0;">
@@ -612,8 +615,8 @@ body {
     <h3 style="text-align:center;">✍️ 写手账</h3>
 
     <div class="form-group">
-      <label class="form-label">📝 今天发生了什么？</label>
-      <textarea class="form-input" id="journalContent" rows="4" placeholder="写点想记录的事情~" style="resize:vertical;"></textarea>
+      <label class="form-label">📝 记录仙女的日常...</label>
+      <textarea class="form-input" id="journalContent" rows="4" placeholder="今天有什么好玩的呢..." style="resize:vertical;background:repeating-linear-gradient(#FFFDF9,#FFFDF9 23px,#F0E8E8 24px);line-height:24px;"></textarea>
     </div>
 
     <div class="form-group">
@@ -634,7 +637,7 @@ body {
     </div>
 
     <div class="form-group">
-      <label class="form-label">📷 照片（可选）</label>
+      <label class="form-label">📷 插入美照</label>
       <div class="photo-area" id="journalPhotoArea">
         <div class="photo-add" onclick="addJournalPhoto()">＋</div>
       </div>
@@ -642,7 +645,7 @@ body {
     </div>
 
     <div class="form-group">
-      <label class="form-label">💰 关联花销（可选）</label>
+      <label class="form-label">👛 贴上今天的小账本（可选）</label>
       <select class="form-select" id="journalRelatedRecord">
         <option value="">不关联</option>
       </select>
@@ -915,16 +918,16 @@ function refreshHome(){
 
   document.getElementById('homeOverview').innerHTML=
     '<div style="display:flex;justify-content:space-around;text-align:center;">'+
-    '<div><div style="font-size:11px;color:var(--text-muted);">📤 支出</div><div style="font-size:22px;font-weight:700;color:var(--text);">¥'+exp.toFixed(0)+'</div></div>'+
-    '<div><div style="font-size:11px;color:var(--text-muted);">📥 收入</div><div style="font-size:22px;font-weight:700;color:#3D7A5F;">¥'+inc.toFixed(0)+'</div></div>'+
-    '<div><div style="font-size:11px;color:var(--text-muted);">💰 结余</div><div style="font-size:22px;font-weight:700;color:'+(inc-exp>=0?'#3D7A5F':'#E08090')+';">¥'+(inc-exp).toFixed(0)+'</div></div>'+
+    '<div><div style="font-size:11px;color:var(--text-muted);">🌸 倒出钱包</div><div style="font-size:22px;font-weight:700;color:var(--text);">¥'+inc.toFixed(0)+'</div></div>'+
+    '<div><div style="font-size:11px;color:var(--text-muted);">🍓 喂给生活</div><div style="font-size:22px;font-weight:700;color:#E08090;">¥'+exp.toFixed(0)+'</div></div>'+
+    '<div><div style="font-size:11px;color:var(--text-muted);">🌟 剩余宝藏</div><div style="font-size:22px;font-weight:700;color:'+(inc-exp>=0?'#3D7A5F':'#E08090')+';">¥'+(inc-exp).toFixed(0)+'</div></div>'+
     '</div>';
 
   // 今天的手账
   var todayJournals=journals.filter(function(j){return j.date===today;}).sort(function(a,b){return b.id-a.id;});
   var hj=document.getElementById('homeJournals');
   if(todayJournals.length===0){
-    hj.innerHTML='<div class="journal-empty">今天还没有写手账哦~ 点击上方卡片记录吧 ✍️</div>';
+    hj.innerHTML='<div class="journal-empty">今天还没有碎碎念哦~<br>点击上方卡片记录吧 ✍️</div>';
   } else {
     var jhtml='';
     todayJournals.forEach(function(j){
@@ -1247,9 +1250,9 @@ function refreshListPage(){
   monthRecords.forEach(function(r){if(r.type==='income')totalInc+=r.amount;else totalExp+=r.amount;});
 
   document.getElementById('monthSummary').innerHTML=
-    '<div class="summary-item"><div class="sum-label">📤 支出</div><div class="sum-value">¥'+totalExp.toFixed(2)+'</div></div>'+
-    '<div class="summary-item"><div class="sum-label">📥 收入</div><div class="sum-value income">¥'+totalInc.toFixed(2)+'</div></div>'+
-    '<div class="summary-item"><div class="sum-label">💰 结余</div><div class="sum-value" style="color:'+(totalInc-totalExp>=0?'#3D7A5F':'#E08090')+'">¥'+(totalInc-totalExp).toFixed(2)+'</div></div>';
+    '<div class="summary-item"><div class="sum-label">🌸 倒出钱包</div><div class="sum-value income">¥'+totalInc.toFixed(2)+'</div></div>'+
+    '<div class="summary-item"><div class="sum-label">🍓 喂给生活</div><div class="sum-value">¥'+totalExp.toFixed(2)+'</div></div>'+
+    '<div class="summary-item"><div class="sum-label">🌟 剩余宝藏</div><div class="sum-value" style="color:'+(totalInc-totalExp>=0?'#3D7A5F':'#E08090')+'">¥'+(totalInc-totalExp).toFixed(2)+'</div></div>';
 
   var listEl=document.getElementById('recordList');
   if(monthRecords.length===0){
@@ -1298,8 +1301,8 @@ function toggleChartView(){
   showChart=!showChart;
   var sec=document.getElementById('chartSection');
   var btn=document.getElementById('chartToggleBtn');
-  if(showChart){sec.classList.add('show');btn.textContent='📋 列表';drawCharts();}
-  else {sec.classList.remove('show');btn.textContent='📊 统计';}
+  if(showChart){sec.classList.add('show');btn.textContent='📋 账单';drawCharts();}
+  else {sec.classList.remove('show');btn.textContent='📊 魔法统计';}
 }
 
 // ==================== 图表绘制 ====================
