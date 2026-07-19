@@ -5,29 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>记账本 - 记账+手账</title>
 <style>
-/* ========== 马卡龙色系变量 ========== */
+/* ========== 少女治愈系马卡龙色彩 🍭 ========== */
 :root {
-  --bg: #FFF5F5;
+  --bg: #FFFDF9;
   --card: #FFFFFF;
-  --pink: #FFB5C2;
+  --pink: #FFB7C5;
   --pink-light: #FFF0F3;
-  --mint: #B5EAD7;
+  --pink-glow: rgba(255,183,197,0.3);
+  --mint: #B7EAD7;
   --mint-light: #E8F8F2;
-  --peach: #FFD3B6;
+  --peach: #FFDAC1;
   --peach-light: #FFF6F0;
-  --lavender: #D5C6E0;
-  --lavender-light: #F5F0F8;
-  --sky: #B5D8EB;
-  --sky-light: #EEF6FA;
-  --text: #5D4E4E;
-  --text-secondary: #8B7E7E;
-  --text-muted: #BFB0B0;
-  --border: #F0E0E0;
-  --shadow: 0 2px 12px rgba(180,160,160,0.12);
-  --shadow-lg: 0 4px 20px rgba(180,160,160,0.18);
-  --radius: 20px;
-  --radius-sm: 14px;
-  --radius-xs: 10px;
+  --lavender: #E8D7F1;
+  --lavender-light: #F8F0FB;
+  --sky: #C7CEEA;
+  --sky-light: #F0F2FA;
+  --text: #4E3D3D;
+  --text-secondary: #9E8E8E;
+  --text-muted: #C8B8B8;
+  --border: #F0E8E8;
+  --shadow: 0 8px 24px rgba(255,183,197,0.15);
+  --shadow-lg: 0 12px 32px rgba(255,183,197,0.22);
+  --radius: 24px;
+  --radius-sm: 18px;
+  --radius-xs: 14px;
+  --bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -211,8 +213,16 @@ body {
 .photo-add:hover { border-color: var(--pink); color: var(--pink); }
 .photo-thumb {
   width: 72px; height: 72px; border-radius: var(--radius-xs); object-fit: cover;
-  position: relative;
+  filter: brightness(1.05) saturate(0.9); /* 日系胶片滤镜 */
+  border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
+/* 贴纸选择器 */
+.sticker-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.sticker-option {
+  font-size: 24px; cursor: pointer; opacity: 0.5; transition: all 0.2s;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+}
+.sticker-option.selected { opacity: 1; transform: scale(1.3); }
 .photo-thumb-wrap { position: relative; }
 .photo-del {
   position: absolute; top: -6px; right: -6px; width: 20px; height: 20px;
@@ -226,7 +236,41 @@ body {
   padding: 13px 24px; border-radius: 16px; font-size: 15px; font-weight: 700;
   border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
 }
-.btn:active { transform: scale(0.96); }
+.btn:active { transform: scale(0.92); transition: transform 0.15s var(--bounce); }
+
+/* 软糖回弹动效 */
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 爱心粒子 */
+@keyframes heartPop {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-40px) scale(0); opacity: 0; }
+}
+.heart-particle {
+  position: fixed; font-size: 16px; pointer-events: none; z-index: 999;
+  animation: heartPop 0.8s ease-out forwards;
+}
+
+/* 撒花特效 */
+@keyframes confettiFall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(60px) rotate(360deg); opacity: 0; }
+}
+.confetti {
+  position: fixed; font-size: 18px; pointer-events: none; z-index: 999;
+  animation: confettiFall 1.5s ease-out forwards;
+}
+
+/* 呼吸灯 */
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,183,197,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(255,183,197,0); }
+}
+.amount-input:focus { animation: breathe 2s infinite; border-bottom-color: var(--pink); }
 .btn-primary { width: 100%; background: var(--pink); color: white; box-shadow: 0 4px 12px rgba(255,181,194,0.4); }
 .btn-primary:hover { opacity: 0.9; }
 .btn-mint { width: 100%; background: var(--mint); color: #3D7A5F; }
@@ -573,15 +617,20 @@ body {
     </div>
 
     <div class="form-group">
-      <label class="form-label">😊 今日心情</label>
+      <label class="form-label">🐱 此时此刻的心情</label>
       <div style="display:flex;gap:10px;font-size:28px;" id="moodPicker">
-        <span data-mood="😊" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.15s;" onclick="pickMood(this)">😊</span>
-        <span data-mood="😢" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.15s;" onclick="pickMood(this)">😢</span>
-        <span data-mood="😤" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.15s;" onclick="pickMood(this)">😤</span>
-        <span data-mood="🥰" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.15s;" onclick="pickMood(this)">🥰</span>
-        <span data-mood="😴" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.15s;" onclick="pickMood(this)">😴</span>
-        <span data-mood="💪" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.15s;" onclick="pickMood(this)">💪</span>
+        <span data-mood="🥰" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.2s;" onclick="pickMood(this)" title="超幸福">🥰</span>
+        <span data-mood="🐶" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.2s;" onclick="pickMood(this)" title="元气满满">🐶</span>
+        <span data-mood="🥺" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.2s;" onclick="pickMood(this)" title="委屈巴巴">🥺</span>
+        <span data-mood="🥱" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.2s;" onclick="pickMood(this)" title="困困">🥱</span>
+        <span data-mood="🐱" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.2s;" onclick="pickMood(this)" title="傲娇">🐱</span>
+        <span data-mood="💔" class="mood-option" style="cursor:pointer;opacity:0.4;transition:all 0.2s;" onclick="pickMood(this)" title="碎碎念">💔</span>
       </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">🌸 选张神仙贴纸吧</label>
+      <div class="sticker-picker" id="stickerPicker"></div>
     </div>
 
     <div class="form-group">
@@ -707,6 +756,34 @@ var currentListMonth = getCurrentMonth();
 var deleteTargetId = null;
 var selectedCat1 = '';
 var selectedMood = '';
+var selectedSticker = '';
+
+// 分类可爱别名映射
+var catAliases = {
+  '🍽️ 餐饮饮食': '🍱 顿顿饱',
+  '🚗 交通出行': '🚌 咕嘟出行',
+  '🛒 购物消费': '🛍️ 剁手手',
+  '🏠 居家住房': '🏠 小窝窝',
+  '🎬 休闲娱乐': '🎮 快乐水',
+  '💊 医疗健康': '💊 元气站',
+  '📚 学习教育': '📚 变聪明',
+  '📱 通讯网络': '📱 连连看',
+  '👔 服饰装扮': '💅 变美丽',
+  '💰 收入': '💰 小进账',
+  '🔧 其他杂项': '🐱 吞金兽'
+};
+function getCatAlias(cat){ return catAliases[cat]||cat; }
+
+// 贴纸库
+var stickerOptions = ['🌸','⭐️','🎀','🐾','🍀','🎈','🍰','🌙','💖','🦋'];
+// 治愈语录
+var healingQuotes = [
+  '今天也是精致的猪猪女孩～✨',
+  '花出去的钱都会变成快乐回来的！🎀',
+  '记录小钱钱，未来变富婆～💖',
+  '每一天都值得被温柔记录 🌸',
+  '生活需要仪式感，钱钱也是～🍰'
+];
 var editingJournalId = null;
 var showChart = false;
 
@@ -757,7 +834,12 @@ function switchPage(name){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.tab-item').forEach(function(t){t.classList.remove('active');});
-  document.querySelector('.tab-item[data-page="'+name+'"]').classList.add('active');
+  var tab=document.querySelector('.tab-item[data-page="'+name+'"]');
+  tab.classList.add('active');
+  // 爱心粒子
+  var rect=tab.getBoundingClientRect();
+  spawnHeart(rect.left+rect.width/2-8, rect.top-10);
+  setTimeout(function(){spawnHeart(rect.left+10, rect.top-20);},150);
   if(name==='home') refreshHome();
   if(name==='bills') refreshListPage();
   if(name==='add'){ refreshCatGrid(); document.getElementById('amountInput').focus(); }
@@ -794,8 +876,8 @@ function buildCarousel(){
   var jToday=journals.filter(function(j){return j.date===todayStr;}).length;
 
   carouselData=[{
-    text:'今日已记 <b>'+todayRecords.length+'</b> 笔，写了 <b>'+jToday+'</b> 条手账',
-    subtext:'支出 ¥'+(exp||0).toFixed(2)
+    text:healingQuotes[Math.floor(Math.random()*healingQuotes.length)],
+    subtext:'今日花销 ¥'+(exp||0).toFixed(2)+'  写了'+jToday+'条碎碎念'
   },{
     text:(diff<=0?'比上月少花了 ¥'+Math.abs(diff).toFixed(0):'比上月多花了 ¥'+diff.toFixed(0))+' '+(diff<=0?'👍':'📈'),
     subtext:'本月支出 ¥'+exp.toFixed(2)+'  收入 ¥'+inc.toFixed(2)
@@ -856,7 +938,7 @@ function refreshHome(){
         if(rel) relatedHtml='<div class="j-related">💰 '+rel.cat1+' · '+rel.cat2+' -¥'+rel.amount.toFixed(2)+'</div>';
       }
       jhtml+='<div class="journal-card" onclick="openJournalDetail('+j.id+')">'+
-        '<div class="j-header"><span class="j-mood">'+(j.mood||'📝')+'</span><span class="j-time">'+j.time+'</span></div>'+
+        '<div class="j-header"><span class="j-mood">'+(j.mood||'📝')+'</span>'+(j.sticker?'<span style="font-size:16px;">'+j.sticker+'</span>':'')+'<span class="j-time">'+j.time+'</span></div>'+
         '<div class="j-content">'+escapeHtml(j.content)+'</div>'+imgHtml+relatedHtml+'</div>';
     });
     hj.innerHTML=jhtml;
@@ -868,14 +950,15 @@ function refreshHome(){
 // ==================== 手账功能 ====================
 
 function openJournalEdit(relatedRecordId){
-  editingJournalId=null; selectedMood=''; tempJournalPhotos=[];
+  editingJournalId=null; selectedMood=''; selectedSticker=''; tempJournalPhotos=[];
   document.getElementById('journalContent').value='';
   document.getElementById('journalRelatedRecord').value=relatedRecordId||'';
   document.getElementById('journalDate').value=formatDate(new Date());
   var now=new Date();
   document.getElementById('journalTime').value=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  document.getElementById('journalSaveBtn').textContent='💾 保存手账';
+  document.getElementById('journalSaveBtn').textContent='💌 写好啦，封存！';
   document.querySelectorAll('.mood-option').forEach(function(m){m.style.opacity='0.4';m.style.transform='';});
+  renderStickerPicker();
   refreshJournalPhotoArea();
   refreshJournalRelatedOptions();
   document.getElementById('journalEditModal').style.display='flex';
@@ -890,6 +973,39 @@ function pickMood(el){
   selectedMood=el.dataset.mood;
   document.querySelectorAll('.mood-option').forEach(function(m){m.style.opacity='0.4';m.style.transform='';});
   el.style.opacity='1'; el.style.transform='scale(1.3)';
+}
+
+// 贴纸选择器
+function renderStickerPicker(){
+  var html='';
+  stickerOptions.forEach(function(s){
+    html+='<span class="sticker-option'+(selectedSticker===s?' selected':'')+'" onclick="pickSticker(this,\''+s+'\')">'+s+'</span>';
+  });
+  document.getElementById('stickerPicker').innerHTML=html;
+}
+function pickSticker(el,s){ selectedSticker=s; document.querySelectorAll('.sticker-option').forEach(function(o){o.classList.remove('selected');}); el.classList.add('selected'); }
+
+// 撒花特效（保存手账成功时）
+function spawnConfetti(){
+  var emojis=['🌸','💖','✨','🎀','🍰','💗','⭐','🦋'];
+  for(var i=0;i<12;i++){
+    setTimeout(function(){
+      var e=document.createElement('div'); e.className='confetti';
+      e.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+      e.style.left=Math.random()*80+'%'; e.style.top='-10px';
+      e.style.animationDuration=(1+Math.random()*1.5)+'s';
+      document.body.appendChild(e);
+      setTimeout(function(){e.remove();},2000);
+    },i*80);
+  }
+}
+
+// 爱心粒子（底部导航切换时）
+function spawnHeart(x,y){
+  var h=document.createElement('div'); h.className='heart-particle';
+  h.textContent='💖'; h.style.left=x+'px'; h.style.top=y+'px';
+  document.body.appendChild(h);
+  setTimeout(function(){h.remove();},800);
 }
 
 function addJournalPhoto(){
@@ -932,7 +1048,8 @@ function saveJournal(){
   var j={
     id: editingJournalId||Date.now(),
     content:content, photos:tempJournalPhotos.slice(),
-    mood:selectedMood, relatedRecordId:relatedId?parseInt(relatedId):null,
+    mood:selectedMood, sticker:selectedSticker,
+    relatedRecordId:relatedId?parseInt(relatedId):null,
     date:date, time:time, createdAt:new Date().toISOString()
   };
   if(editingJournalId){
@@ -943,12 +1060,14 @@ function saveJournal(){
   }
   saveJournals(); closeJournalEdit(); refreshHome();
   showToast(editingJournalId?'手账已更新 ✨':'手账已保存 ✨','success');
+  if(!editingJournalId) spawnConfetti();
 }
 
 function openJournalDetail(jid){
   var j=journals.find(function(x){return x.id===jid;});
   if(!j) return;
   var html='<div class="jd-mood">'+(j.mood||'📝')+'</div>';
+  if(j.sticker) html+='<div style="text-align:center;font-size:24px;margin-top:4px;">'+j.sticker+'</div>';
   html+='<div class="jd-date">'+j.date+' '+j.time+'</div>';
   html+='<div class="jd-content">'+escapeHtml(j.content)+'</div>';
   if(j.photos&&j.photos.length>0){
@@ -975,16 +1094,17 @@ function editJournal(jid){
   closeJournalDetail();
   var j=journals.find(function(x){return x.id===jid;});
   if(!j) return;
-  editingJournalId=jid; selectedMood=j.mood||''; tempJournalPhotos=(j.photos||[]).slice();
+  editingJournalId=jid; selectedMood=j.mood||''; selectedSticker=j.sticker||''; tempJournalPhotos=(j.photos||[]).slice();
   document.getElementById('journalContent').value=j.content;
   document.getElementById('journalRelatedRecord').value=j.relatedRecordId||'';
   document.getElementById('journalDate').value=j.date;
   document.getElementById('journalTime').value=j.time;
-  document.getElementById('journalSaveBtn').textContent='💾 更新手账';
+  document.getElementById('journalSaveBtn').textContent='💌 更新手账';
   document.querySelectorAll('.mood-option').forEach(function(m){
     m.style.opacity=m.dataset.mood===selectedMood?'1':'0.4';
     m.style.transform=m.dataset.mood===selectedMood?'scale(1.3)':'';
   });
+  renderStickerPicker();
   refreshJournalPhotoArea();
   refreshJournalRelatedOptions();
   document.getElementById('journalEditModal').style.display='flex';
@@ -1007,9 +1127,10 @@ function refreshCatGrid(){
   keys.forEach(function(cat){
     var color=catColors[cat]||'#64748B';
     var icon=cat.replace(/[^一-龥]/g,'').slice(0,1);
+    var alias=getCatAlias(cat);
     html+='<div class="cat-grid-item'+(selectedCat1===cat?' selected':'')+'" data-cat="'+escapeHtml(cat)+'" onclick="selectCat1(this,\''+escapeHtml(cat)+'\')" style="--color:'+color+'">'+
       '<span class="cgi-icon" style="background:'+color+'20;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;">'+icon+'</span>'+
-      '<span>'+cat.split(' ').pop()+'</span></div>';
+      '<span>'+alias+'</span></div>';
   });
   grid.innerHTML=html;
 }
