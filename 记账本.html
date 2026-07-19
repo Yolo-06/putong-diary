@@ -179,11 +179,11 @@ body {
 
 /* 分类标签（横向滚动） */
 .cat-tag {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  display: inline-flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 10px 14px; border-radius: 20px; border: 2px solid var(--border);
   cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text-secondary);
   transition: all 0.15s; background: var(--card); white-space: nowrap;
-  flex-shrink: 0; min-width: 56px;
+  flex-shrink: 0; min-width: 56px; user-select: none;
 }
 .cat-tag .cgi-icon { font-size: 20px; }
 .cat-tag.selected { border-color: var(--pink); background: var(--pink-light); color: #C06070; }
@@ -512,7 +512,7 @@ body {
 
       <!-- 分类：滚动标签式 -->
       <div class="form-label">👛 钱钱花在哪了？</div>
-      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none;" id="catTags">
+      <div style="display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px;-webkit-overflow-scrolling:touch;" id="catTags">
       </div>
 
       <div class="form-group">
