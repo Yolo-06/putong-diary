@@ -919,7 +919,7 @@ function refreshJournalRelatedOptions(){
   var todayRecords=records.filter(function(r){return r.date===todayStr;});
   sel.innerHTML='<option value="">不关联</option>';
   todayRecords.forEach(function(r){
-    sel.innerHTML+='<option value="'+r.id+'">'+r.cat1+' · '+r.cat2+' ¥'+r.amount.toFixed(2)+'</option>';
+    sel.innerHTML+='<option value="'+r.id+'">'+escapeHtml(r.cat1)+' · '+escapeHtml(r.cat2)+' ¥'+r.amount.toFixed(2)+'</option>';
   });
 }
 
