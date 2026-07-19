@@ -136,6 +136,8 @@ test('addRecord - 空金额应拒绝', () => {
 
 test('addRecord - 正常记录', () => {
   win.saveRecords([]); win.records = [];
+  win.currentAddPhotos = win.currentAddPhotos || [];
+  win.recordType = 'expense';
   win.kbAmount = '88.50';
   win.selectedCat1 = '🍽️ 餐饮饮食';
   doc.getElementById('dateInput').value = '2026-07-14';
@@ -153,6 +155,7 @@ test('addRecord - 正常记录', () => {
 
 test('addRecord - 收入类型识别', () => {
   win.saveRecords([]); win.records = [];
+  win.currentAddPhotos = win.currentAddPhotos || [];
   win.kbAmount = '5000';
   win.recordType = 'income';  // V2：先切到收入模式
   win.selectedCat1 = '💰 收入';
