@@ -470,6 +470,30 @@ body {
 }
 .color-dot.selected { border-color: var(--text); transform: scale(1.15); }
 
+/* ========== 治愈时刻页 ========== */
+.heal-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.heal-stat-card {
+  background: var(--card); border-radius: var(--radius); padding: 16px;
+  text-align: center; box-shadow: var(--shadow);
+}
+.heal-stat-card .hs-icon { font-size: 28px; margin-bottom: 6px; }
+.heal-stat-card .hs-value { font-size: 24px; font-weight: 700; color: var(--text); }
+.heal-stat-card .hs-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.heal-stat-card .hs-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.heal-stat-card.full { grid-column: 1 / -1; text-align: left; }
+.heal-stat-card.full .top3-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 13px; color: var(--text); }
+.heal-stat-card.full .top3-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; }
+/* 照片墙 */
+.photo-wall { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.photo-wall img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-xs); cursor: pointer; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: transform 0.15s; }
+.photo-wall img:active { transform: scale(1.05); }
+.photo-wall .pw-empty { aspect-ratio: 1; border-radius: var(--radius-xs); background: var(--bg); border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-muted); }
+/* 甜甜圈 */
+.donut-wrap { display: flex; flex-direction: column; align-items: center; }
+.donut-wrap svg { max-width: 200px; }
+.donut-legend { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; font-size: 11px; }
+.donut-legend span { display: flex; align-items: center; gap: 3px; }
+
 /* ========== 响应式 ========== */
 @media (max-width: 414px) {
   .app { max-width: 100%; }
@@ -618,6 +642,30 @@ body {
     </div>
   </div>
 
+  <!-- ====== 页面4：治愈时刻 ====== -->
+  <div class="page" id="page-heal">
+    <!-- 治愈语录 -->
+    <div id="healQuote" style="background:linear-gradient(135deg,var(--pink-light),var(--lavender-light));border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:14px;font-size:14px;color:#C06070;font-weight:600;box-shadow:var(--shadow);"></div>
+
+    <!-- 数据卡片 2x2 -->
+    <div class="heal-stat-grid" id="healStats"></div>
+
+    <!-- 照片回忆墙 -->
+    <div class="card">
+      <div class="card-title">📷 回忆照片墙</div>
+      <div class="photo-wall" id="photoWall"></div>
+    </div>
+
+    <!-- 心情甜甜圈 -->
+    <div class="card">
+      <div class="card-title">🍩 心情甜甜圈</div>
+      <div class="donut-wrap" id="moodDonut"></div>
+    </div>
+
+    <!-- 连续记账里程碑 -->
+    <div id="streakCard" style="text-align:center;padding:20px;margin-bottom:14px;"></div>
+  </div>
+
   <!-- ====== 底部导航 ====== -->
   <div class="tab-bar">
     <button class="tab-item active" data-page="home" onclick="switchPage('home')">
@@ -628,6 +676,9 @@ body {
     </button>
     <button class="tab-item" data-page="bills" onclick="switchPage('bills')">
       <span class="tab-icon">📖</span>日记
+    </button>
+    <button class="tab-item" data-page="heal" onclick="switchPage('heal')">
+      <span class="tab-icon">🌟</span>治愈
     </button>
   </div>
 
@@ -913,6 +964,7 @@ function switchPage(name){
   setTimeout(function(){spawnHeart(rect.left+10, rect.top-20);},150);
   if(name==='home') refreshHome();
   if(name==='bills') refreshListPage();
+  if(name==='heal') refreshHealPage();
   if(name==='add'){ document.getElementById('amountInput').focus(); }
 }
 
@@ -1585,6 +1637,102 @@ function setBudget(){
     showToast('预算已设为 ¥'+monthlyBudget+' 🎯','success');
     closeSettings(); refreshHome();
   }
+}
+
+// ==================== 治愈时刻页 ====================
+
+function refreshHealPage(){
+  // 治愈语录
+  var q=healingQuotes[Math.floor(Math.random()*healingQuotes.length)];
+  document.getElementById('healQuote').innerHTML='💬 '+q;
+
+  // 数据计算
+  var journalCount=journals.length;
+  var photoCount=0;
+  journals.forEach(function(j){photoCount+=j.photos.length;});
+  records.forEach(function(r){photoCount+=r.photos.length;});
+  var recordDays=new Set(records.map(function(r){return r.date;})).size;
+  // 连续记账天数
+  var streak=0; var d=new Date();
+  while(true){
+    var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(records.some(function(r){return r.date===ds;})){streak++;d.setDate(d.getDate()-1);}
+    else break;
+  }
+  var streakEmoji=streak>=100?'💎':streak>=30?'👑':streak>=7?'🌟':'💪';
+  // 心情排行
+  var moodCount={}; journals.forEach(function(j){if(j.mood){moodCount[j.mood]=(moodCount[j.mood]||0)+1;}});
+  var topMood='',topMoodCount=0;
+  for(var k in moodCount){if(moodCount[k]>topMoodCount){topMood=k;topMoodCount=moodCount[k];}}
+  var moodNames={'🥰':'超幸福','🐶':'元气','🥺':'委屈','🥱':'困困','🐱':'傲娇','💔':'碎碎念'};
+  // 吞金兽TOP3
+  var catExp={}; records.forEach(function(r){if(r.type!=='expense')return;catExp[r.cat1]=(catExp[r.cat1]||0)+r.amount;});
+  var top3=Object.entries(catExp).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
+
+  // 渲染数据卡片
+  var cardHtml='';
+  cardHtml+='<div class="heal-stat-card"><div class="hs-icon">📝</div><div class="hs-value">'+journalCount+'</div><div class="hs-label">手账纪念册</div><div class="hs-sub">共 '+photoCount+' 张照片</div></div>';
+  cardHtml+='<div class="heal-stat-card"><div class="hs-icon">📅</div><div class="hs-value">'+recordDays+'</div><div class="hs-label">坚持的力量</div><div class="hs-sub">打卡了 '+recordDays+' 个日子</div></div>';
+  cardHtml+='<div class="heal-stat-card"><div class="hs-icon">'+(topMood||'📝')+'</div><div class="hs-value">'+(topMood?(moodNames[topMood]||topMood):'--')+'</div><div class="hs-label">心情之王</div><div class="hs-sub">出现了 '+(topMoodCount||0)+' 次</div></div>';
+  cardHtml+='<div class="heal-stat-card full"><div class="hs-icon" style="font-size:18px;">🐱 吞金兽 TOP3</div>';
+  if(top3.length===0) cardHtml+='<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">还没有支出记录哦~</div>';
+  else top3.forEach(function(e,i){
+    var color=catColors[e[0]]||'#64748B'; var alias=getCatAlias(e[0]);
+    cardHtml+='<div class="top3-row"><div class="top3-badge" style="background:'+color+';">'+(i+1)+'</div><span>'+alias+'</span><span style="margin-left:auto;font-weight:700;">¥'+e[1].toFixed(0)+'</span></div>';
+  });
+  cardHtml+='</div>';
+  document.getElementById('healStats').innerHTML=cardHtml;
+
+  // 照片回忆墙
+  var allPhotos=[]; journals.forEach(function(j){j.photos.forEach(function(p){allPhotos.push(p);});});
+  records.forEach(function(r){r.photos.forEach(function(p){allPhotos.push(p);});});
+  // 随机打乱取9张
+  for(var i=allPhotos.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=allPhotos[i];allPhotos[i]=allPhotos[j];allPhotos[j]=t;}
+  var wallPhotos=allPhotos.slice(0,9);
+  var wallHtml='';
+  for(var pi=0;pi<9;pi++){
+    if(pi<wallPhotos.length) wallHtml+='<img src="'+wallPhotos[pi]+'" onclick="showPhotoFull(this.src)">';
+    else wallHtml+='<div class="pw-empty">🌸</div>';
+  }
+  document.getElementById('photoWall').innerHTML=wallHtml||'<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:20px;">还没有照片回忆呢~<br>去记账或写手账时拍张照吧 📷</div>';
+
+  // 心情甜甜圈 (SVG)
+  var donutHtml='';
+  var totalMood=0; for(var k in moodCount) totalMood+=moodCount[k];
+  if(totalMood===0){
+    donutHtml='<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:10px;">还没有心情记录~</div>';
+  } else {
+    var moodColors={'🥰':'#FFB7C5','🐶':'#FFDAC1','🥺':'#C7CEEA','🥱':'#E8D7F1','🐱':'#B7EAD7','💔':'#D5C6E0'};
+    var cx=100,cy=100,r=70,sw=18,circum=2*Math.PI*r;
+    var angle=0,legend='';
+    donutHtml='<svg width="200" height="200" viewBox="0 0 200 200">';
+    for(var k in moodCount){
+      var pct=moodCount[k]/totalMood;
+      var dashLen=circum*pct, dashGap=circum-dashLen;
+      var rot=angle*360;
+      donutHtml+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+(moodColors[k]||'#ccc')+'" stroke-width="'+sw+'" stroke-dasharray="'+dashLen+' '+dashGap+'" stroke-linecap="round" transform="rotate('+(-90+rot)+' '+cx+' '+cy+')"/>';
+      angle+=pct;
+      legend+='<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(moodColors[k]||'#ccc')+';"></span> '+(moodNames[k]||k)+' '+(pct*100).toFixed(0)+'%</span>';
+    }
+    donutHtml+='<text x="'+cx+'" y="'+(cy-5)+'" text-anchor="middle" font-size="28">'+(topMood||'📝')+'</text><text x="'+cx+'" y="'+(cy+18)+'" text-anchor="middle" font-size="11" fill="#9E8E8E">心情之王</text>';
+    donutHtml+='</svg><div class="donut-legend">'+legend+'</div>';
+  }
+  document.getElementById('moodDonut').innerHTML=donutHtml;
+
+  // 连续记账里程碑
+  document.getElementById('streakCard').innerHTML=
+    '<div style="background:linear-gradient(135deg,#FFF0F3,#F8F0FB);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);">'+
+    '<div style="font-size:40px;">'+streakEmoji+'</div>'+
+    '<div style="font-size:28px;font-weight:700;color:#C06070;margin:8px 0;">连续 '+streak+' 天</div>'+
+    '<div style="font-size:13px;color:var(--text-muted);">'+(streak>=100?'你是坚持记账的超级英雄！💎':streak>=30?'一个月不间断，太厉害了！👑':streak>=7?'已经坚持一周啦，继续保持！🌟':streak>0?'每天记录一点点，未来大不同 💪':'今天开始记账吧，从0到1就是胜利 ✨')+'</div></div>';
+}
+
+function showPhotoFull(src){
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  overlay.innerHTML='<img src="'+src+'" style="max-width:90%;max-height:90%;border-radius:12px;">';
+  overlay.onclick=function(){overlay.remove();};
+  document.body.appendChild(overlay);
 }
 
 // ==================== 设置面板 ====================
