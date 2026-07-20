@@ -694,6 +694,52 @@ body.dark-fairy-mode .cat-modal-box { background: rgba(49,38,66,0.95) !important
 body.dark-fairy-mode .modal-overlay { background: rgba(0,0,0,0.5); }
 body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important; }
 
+/* ========== 锁屏 ========== */
+.lock-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, #FFF0F3 0%, #F8F0FB 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.lock-card {
+  text-align: center; padding: 40px 30px; border-radius: 28px;
+  background: var(--card); box-shadow: var(--shadow-lg);
+  width: 300px; max-width: 90vw;
+}
+.lock-icon { font-size: 56px; margin-bottom: 8px; animation: petFloat 3s ease-in-out infinite; }
+.lock-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.lock-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; min-height: 20px; }
+.pin-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--pink); background: transparent;
+  transition: all 0.2s;
+}
+.pin-dot.filled { background: var(--pink); transform: scale(1.15); }
+.pin-error { font-size: 12px; color: #E08090; margin-bottom: 12px; display: none; }
+.pin-keypad {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin-bottom: 16px;
+}
+.pin-keypad button {
+  padding: 16px 0; border-radius: 16px; border: none;
+  background: var(--pink-light); color: var(--text); font-size: 20px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s var(--bounce);
+  box-shadow: 0 3px 0 #E8C4CC;
+}
+.pin-keypad button:active { transform: translateY(3px); box-shadow: 0 0 0 #E8C4CC; }
+.pin-keypad .key-fn { background: #FFF0F3; color: #C06070; font-size: 13px; }
+.pin-keypad .key-go { background: linear-gradient(135deg, var(--pink), #FF9AA2); color: white; font-size: 14px; box-shadow: 0 3px 0 #E88A95; }
+.pin-keypad .key-go:active { box-shadow: 0 0 0 #E88A95; }
+.lock-footer { font-size: 12px; color: var(--text-muted); }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-6px); }
+  40%,80% { transform: translateX(6px); }
+}
+.shake { animation: shake 0.4s ease; }
+
 /* ========== 响应式 ========== */
 @media (max-width: 414px) {
   .app { max-width: 100%; }
@@ -702,7 +748,23 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
 </head>
 <body>
 
-<div class="app">
+<!-- ====== 密码锁屏 ====== -->
+<div id="lockScreen" class="lock-screen">
+  <div class="lock-card">
+    <div class="lock-icon">🐱</div>
+    <h2 class="lock-title">✨ 噗通日记本</h2>
+    <p class="lock-sub" id="lockMessage">加载中...</p>
+    <div class="pin-dots" id="pinDots"></div>
+    <div class="pin-error" id="pinError">密码错误，再试一次吧~</div>
+    <div class="pin-keypad" id="pinKeypad"></div>
+    <div class="lock-footer" id="lockFooter"></div>
+    <div class="lock-footer" id="lockReset" style="display:none;margin-top:10px;">
+      <a href="javascript:void(0)" onclick="resetPassword()" style="color:var(--text-muted);text-decoration:none;font-size:12px;">忘记密码？</a>
+    </div>
+  </div>
+</div>
+
+<div class="app" style="display:none;">
   <!-- ====== 顶部栏 ====== -->
   <div class="header">
     <div style="width:36px;"></div>
@@ -926,6 +988,7 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
     <div class="settings-body">
       <div class="settings-item" onclick="closeSettings();showSettingsCatManage()">🌸 小分类大变身 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="toggleDarkMode()">🌙 梦幻星空模式 <span id="darkModeStatus" style="font-size:12px;color:var(--text-muted);">关</span></div>
+      <div class="settings-item" onclick="changePassword()">🔐 修改密码 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="setBudget()">💰 变富小预算（当前 <span id="budgetDisplay">¥5000</span>） <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="closeSettings();exportCSV(currentListMonth)">📂 魔法数据导出 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="exportFullBackup()">💾 完整备份（含照片） <span class="si-arrow">▶</span></div>
@@ -1020,6 +1083,283 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
 <input type="file" id="globalPhotoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handleGlobalPhotos(this)">
 
 <script>
+// ==================== API 封装 ====================
+var authToken = sessionStorage.getItem('jizhangben_token') || '';
+
+function apiHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken };
+}
+
+async function apiGet(url) {
+  var r = await fetch(url, { headers: apiHeaders() });
+  if (!r.ok) { var e = await r.json().catch(function(){ return {}; }); throw new Error(e.error || '请求失败'); }
+  return r.json();
+}
+
+async function apiPut(url, data) {
+  var r = await fetch(url, { method: 'PUT', headers: apiHeaders(), body: JSON.stringify(data) });
+  if (!r.ok) { var e = await r.json().catch(function(){ return {}; }); throw new Error(e.error || '保存失败'); }
+  return r.json();
+}
+
+async function apiPost(url, data) {
+  var r = await fetch(url, { method: 'POST', headers: data ? apiHeaders() : { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  if (!r.ok) { var e = await r.json().catch(function(){ return {}; }); throw new Error(e.error || '操作失败'); }
+  return r.json();
+}
+
+// ==================== 锁屏逻辑 ====================
+var lockMode = '';      // 'firstrun' | 'login'
+var pinInput = '';
+var pinConfirm = '';    // 首次设置时用于确认
+var lockResolve = null;
+var pinLength = 6;      // 默认6位，后续从服务器获取
+
+function renderPinDots() {
+  var html = '';
+  for (var i = 0; i < pinLength; i++) {
+    html += '<span class="pin-dot"></span>';
+  }
+  document.getElementById('pinDots').innerHTML = html;
+}
+
+function buildPinKeypad() {
+  var html = '';
+  for (var i = 1; i <= 9; i++) {
+    html += '<button onclick="onPinDigit(\'' + i + '\')">' + i + '</button>';
+  }
+  html += '<button class="key-fn" onclick="onPinBack()">⌫</button>';
+  html += '<button onclick="onPinDigit(\'0\')">0</button>';
+  html += '<button class="key-go" id="pinGoBtn" onclick="onPinGo()">→</button>';
+  document.getElementById('pinKeypad').innerHTML = html;
+}
+
+function updatePinDots(count) {
+  var dots = document.querySelectorAll('#pinDots .pin-dot');
+  dots.forEach(function(d, i) { d.classList.toggle('filled', i < count); });
+}
+
+function showPinError(msg) {
+  var el = document.getElementById('pinError');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('lockCard').classList.add('shake');
+  setTimeout(function() { document.getElementById('lockCard').classList.remove('shake'); }, 400);
+  pinInput = '';
+  updatePinDots(0);
+}
+
+function onPinDigit(d) {
+  if (pinInput.length >= pinLength) return;
+  pinInput += d;
+  updatePinDots(pinInput.length);
+  document.getElementById('pinError').style.display = 'none';
+}
+
+function onPinBack() {
+  pinInput = pinInput.slice(0, -1);
+  updatePinDots(pinInput.length);
+}
+
+function onPinGo() {
+  if (lockMode === 'firstrun') {
+    if (pinInput.length < 4) { showPinError('至少需要4位密码哦~'); return; }
+    if (!pinConfirm) {
+      // 第一次输入
+      pinConfirm = pinInput; pinInput = '';
+      updatePinDots(0);
+      document.getElementById('lockMessage').textContent = '请再次输入确认密码~';
+      document.getElementById('lockFooter').textContent = '💡 记住它哦，忘了只能重来';
+      return;
+    }
+    // 确认密码
+    if (pinInput !== pinConfirm) {
+      pinConfirm = ''; pinInput = '';
+      updatePinDots(0);
+      document.getElementById('lockMessage').textContent = '设置你的专属密码~';
+      showPinError('两次密码不一致，重新设置吧~');
+      return;
+    }
+    // 密码确认一致，调用API
+    document.getElementById('lockMessage').textContent = '正在创建你的专属小账本...';
+    apiPost('/api/auth/set-password', { password: pinInput })
+      .then(function(data) {
+        authToken = data.token;
+        sessionStorage.setItem('jizhangben_token', authToken);
+        // 更新密码长度显示
+        pinLength = data.pinLength || pinInput.length;
+        if (lockResolve) lockResolve();
+      })
+      .catch(function(e) { showPinError(e.message); pinConfirm = ''; });
+  } else {
+    // 登录模式
+    if (pinInput.length < 4) return;
+    document.getElementById('lockMessage').textContent = '正在开门...';
+    apiPost('/api/auth/login', { password: pinInput })
+      .then(function(data) {
+        authToken = data.token;
+        sessionStorage.setItem('jizhangben_token', authToken);
+        if (lockResolve) lockResolve();
+      })
+      .catch(function(e) { showPinError(e.message); });
+  }
+}
+
+function showFirstRunMode() {
+  lockMode = 'firstrun';
+  pinInput = ''; pinConfirm = '';
+  pinLength = 6;  // 首次设置时先显示6个点
+  renderPinDots();
+  buildPinKeypad();
+  document.getElementById('lockMessage').textContent = '设置你的专属密码~';
+  document.getElementById('lockFooter').textContent = '💡 4~6位数字，记住哦~';
+  document.getElementById('lockReset').style.display = 'none';
+}
+
+function showLoginMode(givenPinLength) {
+  lockMode = 'login';
+  pinInput = '';
+  pinLength = givenPinLength || 6;
+  renderPinDots();
+  buildPinKeypad();
+  document.getElementById('lockMessage').textContent = '输入密码进入你的小世界~';
+  document.getElementById('lockFooter').textContent = '🐱 欢迎回来~';
+  document.getElementById('lockReset').style.display = 'block';
+}
+
+function resetPassword() {
+  var answer = prompt('确定要重置密码吗？\n\n输入"我确定要重置"来确认：\n（注意：数据不会丢失，只是重新设置密码）');
+  if (answer !== '我确定要重置') {
+    if (answer && answer.length > 0) showToast('输入不正确，操作已取消', 'error');
+    return;
+  }
+  apiPost('/api/auth/reset-password', { confirm: '我确定要重置' })
+    .then(function() {
+      showFirstRunMode();
+      showToast('密码已重置，请设置新密码~', 'success');
+    })
+    .catch(function(e) {
+      alert('重置失败：' + (e.message || '未知错误'));
+    });
+}
+
+function waitForAuth() {
+  return new Promise(function(resolve) { lockResolve = resolve; });
+}
+
+// ==================== 数据加载 ====================
+var unlockedStickers = [];
+var lastCheckinDate = '';
+var darkModeSetting = '0';
+
+async function loadAllData() {
+  try {
+    var results = await Promise.all([
+      apiGet('/api/records'),
+      apiGet('/api/journals'),
+      apiGet('/api/categories')
+    ]);
+    records = results[0] || [];
+    journals = results[1] || [];
+    userCategories = results[2] || {};
+
+    // 加载键值数据（非关键，逐个加载，失败不阻塞）
+    var budgetV = await apiGet('/api/kv/budget').catch(function(){ return { value: '5000' }; });
+    monthlyBudget = parseFloat(budgetV.value) || 5000;
+
+    var darkV = await apiGet('/api/kv/darkmode').catch(function(){ return { value: '0' }; });
+    darkModeSetting = darkV.value;
+
+    var stickersV = await apiGet('/api/kv/stickers').catch(function(){ return { value: '[]' }; });
+    try { unlockedStickers = JSON.parse(stickersV.value); } catch(e) { unlockedStickers = []; }
+
+    var checkinV = await apiGet('/api/kv/checkin_date').catch(function(){ return { value: '' }; });
+    lastCheckinDate = checkinV.value || '';
+
+    var petV = await apiGet('/api/kv/pet_img').catch(function(){ return { value: '' }; });
+    petImg = petV.value || '';
+
+    rebuildCategories();
+  } catch(e) {
+    console.error('数据加载失败:', e);
+    showToast('数据加载失败，请刷新页面重试', 'error');
+  }
+}
+
+async function checkAndMigrate() {
+  var oldRecords = localStorage.getItem('jizhangben_records');
+  if (!oldRecords) return;  // 没有旧数据
+
+  if (records.length > 0) return;  // 数据库已有数据
+
+  try {
+    var payload = {
+      records: JSON.parse(localStorage.getItem('jizhangben_records') || '[]'),
+      journals: JSON.parse(localStorage.getItem('jizhangben_journals') || '[]'),
+      userCategories: JSON.parse(localStorage.getItem('jizhangben_usercats') || '{}'),
+      budget: localStorage.getItem('jizhangben_budget') || '5000',
+      darkmode: localStorage.getItem('jizhangben_darkmode') || '0',
+      stickers: localStorage.getItem('jizhangben_stickers') || '[]',
+      checkin_date: localStorage.getItem('jizhangben_checkin_date') || '',
+      pet_img: localStorage.getItem('jizhangben_petimg') || ''
+    };
+    var result = await apiPost('/api/migrate', payload);
+    showToast('数据已迁移到本地数据库，更安全啦！共迁移 ' + result.recordsCount + ' 条记录和 ' + result.journalsCount + ' 篇手账~', 'success');
+    // 重新加载数据
+    await loadAllData();
+  } catch(e) {
+    if (e.message && e.message.indexOf('409') < 0) {
+      console.error('数据迁移失败:', e);
+      // 迁移失败不影响使用，用户可以手动导出导入
+    }
+  }
+}
+
+// ==================== 应用启动 ====================
+async function startup() {
+  // 1. 检查锁屏状态
+  var status;
+  try {
+    status = await apiGet('/api/auth/status');
+  } catch(e) {
+    document.getElementById('lockMessage').textContent = '无法连接小管家 💔 请确认 server.js 已启动，然后刷新页面';
+    return;
+  }
+
+  if (status.hasPassword) {
+    showLoginMode(status.pinLength || 6);
+    await waitForAuth();
+  } else {
+    showFirstRunMode();
+    await waitForAuth();
+  }
+
+  // 2. 加载数据
+  await loadAllData();
+
+  // 3. 迁移旧数据
+  await checkAndMigrate();
+
+  // 4. 应用暗黑模式
+  if (darkModeSetting === '1') {
+    document.body.classList.add('dark-fairy-mode');
+    var dsEl = document.getElementById('darkModeStatus');
+    if (dsEl) dsEl.textContent = '开 ✨';
+  }
+
+  // 5. 显示应用
+  document.getElementById('lockScreen').style.display = 'none';
+  document.querySelector('.app').style.display = '';
+
+  // 6. 初始化
+  init();
+}
+
+// ==================== 锁屏卡片引用 ====================
+// 给锁屏卡片加 id 方便 shake 动画
+(function() {
+  var card = document.querySelector('.lock-card');
+  if (card) card.id = 'lockCard';
+})();
 // ==================== 数据层 ====================
 
 var presetCategories = {
@@ -1054,14 +1394,15 @@ var tempAddPhotos = [];
 var tempJournalPhotos = [];
 
 function loadUserCategories(){
-  try { var d=localStorage.getItem('jizhangben_usercats'); return d?JSON.parse(d):{}; }
-  catch(e){ return {}; }
+  // 数据已在 startup() 中从服务器加载到 userCategories 变量
+  return userCategories;
 }
 function saveUserCategories(){
-  try { localStorage.setItem('jizhangben_usercats',JSON.stringify(userCategories)); }
-  catch(e){ showToast('保存分类失败！存储空间可能已满','error'); }
+  apiPut('/api/categories', userCategories).catch(function(e){
+    showToast('保存分类失败！','error');
+  });
 }
-var userCategories = loadUserCategories();
+var userCategories = {};
 var categories = {};
 var catColors = {};
 
@@ -1078,25 +1419,28 @@ function rebuildCategories(){
 rebuildCategories();
 
 function loadRecords(){
-  try { var d=localStorage.getItem('jizhangben_records'); return d?JSON.parse(d):[]; }
-  catch(e){ return []; }
+  // 数据已在 startup() 中从服务器加载到 records 变量
+  return records;
 }
-function saveRecords(records){
-  try { localStorage.setItem('jizhangben_records',JSON.stringify(records)); }
-  catch(e){ showToast('保存失败！存储空间可能已满，请导出备份后清理','error'); }
+function saveRecords(newRecords){
+  records = newRecords;
+  apiPut('/api/records', records).catch(function(e){
+    showToast('保存失败！请检查服务器是否在运行', 'error');
+  });
 }
 
 function loadJournals(){
-  try { var d=localStorage.getItem('jizhangben_journals'); return d?JSON.parse(d):[]; }
-  catch(e){ return []; }
+  // 数据已在 startup() 中从服务器加载到 journals 变量
+  return journals;
 }
 function saveJournals(){
-  try { localStorage.setItem('jizhangben_journals',JSON.stringify(journals)); }
-  catch(e){ showToast('保存手账失败！存储空间可能已满','error'); }
+  apiPut('/api/journals', journals).catch(function(e){
+    showToast('保存手账失败！','error');
+  });
 }
 
-var records = loadRecords();
-var journals = loadJournals();
+var records = [];
+var journals = [];
 var currentListMonth = getCurrentMonth();
 var deleteTargetId = null;
 var selectedCat1 = '';
@@ -1131,9 +1475,15 @@ var healingQuotes = [
 ];
 
 // 月度预算（默认5000元）
-function loadBudget(){ try{var d=localStorage.getItem('jizhangben_budget');return d?parseFloat(d):5000;}catch(e){return 5000;} }
-function saveBudget(v){ localStorage.setItem('jizhangben_budget',v); }
-var monthlyBudget = loadBudget();
+function loadBudget(){
+  // 数据已在 startup() 中从服务器加载到 monthlyBudget 变量
+  return monthlyBudget;
+}
+function saveBudget(v){
+  monthlyBudget = parseFloat(v);
+  apiPut('/api/kv/budget', { value: String(v) }).catch(function(e){});
+}
+var monthlyBudget = 5000;
 
 // 预算提醒文案
 function getBudgetTip(exp,budget){
@@ -1461,7 +1811,7 @@ function openJournalDetail(jid){
   }
   if(j.relatedRecordId){
     var rel=records.find(function(r){return r.id===j.relatedRecordId;});
-    if(rel) html+='<div style="text-align:center;color:var(--peach);margin-top:10px;">💰 关联花销：'+rel.cat1+' · '+rel.cat2+' ¥'+rel.amount.toFixed(2)+'</div>';
+    if(rel) html+='<div style="text-align:center;color:var(--peach);margin-top:10px;">💰 关联花销：'+escapeHtml(rel.cat1)+' · '+escapeHtml(rel.cat2)+' ¥'+rel.amount.toFixed(2)+'</div>';
   }
   html+='<div class="jd-actions" style="margin-top:16px;">'+
     '<button class="btn btn-sm btn-outline" onclick="editJournal('+j.id+')">✏️ 编辑</button>'+
@@ -1794,7 +2144,7 @@ function drawCharts(){
       var bw=maxA>0?(e[1]/maxA*100):0;
       var icon=e[0].replace(/[^一-龥]/g,'').slice(0,1);
       chartHtml+='<div class="cat-bar-item"><div class="cat-bar-icon" style="background:'+color+'20;color:'+color+'">'+icon+'</div>'+
-        '<div class="cat-bar-info"><div class="cat-name">'+e[0]+'</div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:'+bw+'%;background:'+color+';"></div></div></div>'+
+        '<div class="cat-bar-info"><div class="cat-name">'+escapeHtml(e[0])+'</div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:'+bw+'%;background:'+color+';"></div></div></div>'+
         '<div class="cat-bar-amount">¥'+e[1].toFixed(0)+'</div><div class="cat-bar-percent">'+pct.toFixed(1)+'%</div></div>';
     });
   }
@@ -1895,6 +2245,22 @@ function exportFullBackup(){
   a.href=url; a.download='记账本_完整备份_'+formatDate(new Date())+'.json';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   showToast('完整备份已导出（含照片和手账）','success');
+}
+
+// 修改密码
+function changePassword(){
+  closeSettings();
+  var oldPwd=prompt('请输入当前密码：');
+  if(!oldPwd) return;
+  var newPwd=prompt('请输入新密码（4~6位数字）：');
+  if(!newPwd) return;
+  if(newPwd.length<4||newPwd.length>6){showToast('新密码需要4~6位数字哦~','error');return;}
+  if(!/^\d+$/.test(newPwd)){showToast('新密码只能是数字哦~','error');return;}
+  var confirmPwd=prompt('请再次输入新密码确认：');
+  if(newPwd!==confirmPwd){showToast('两次密码不一致，请重试','error');return;}
+  apiPut('/api/auth/change-password', { oldPassword: oldPwd, newPassword: newPwd })
+    .then(function(){ showToast('密码修改成功！🔐','success'); })
+    .catch(function(e){ showToast(e.message||'修改失败','error'); });
 }
 
 // 预算设置
@@ -2008,16 +2374,11 @@ function showPhotoFull(src){
 function toggleDarkMode(){
   document.body.classList.toggle('dark-fairy-mode');
   var isDark=document.body.classList.contains('dark-fairy-mode');
-  localStorage.setItem('jizhangben_darkmode',isDark?'1':'0');
+  apiPut('/api/kv/darkmode', { value: isDark ? '1' : '0' }).catch(function(){});
   document.getElementById('darkModeStatus').textContent=isDark?'开 ✨':'关';
   showToast(isDark?'🌙 进入梦幻星空树洞~':'☀️ 回到香草奶泡时光~','success');
 }
-(function(){
-  if(localStorage.getItem('jizhangben_darkmode')==='1'){
-    document.body.classList.add('dark-fairy-mode');
-    var s=document.getElementById('darkModeStatus'); if(s) s.textContent='开 ✨';
-  }
-})();
+// 暗黑模式状态由 startup() 加载，不再需要 IIFE
 
 // ==================== 盲盒签到 ====================
 var fortunes=[
@@ -2031,32 +2392,36 @@ var fortunes=[
 ];
 var bonusStickers=['🦋','💎','🌟','🎪','🍭','🫧','🧸','🌈'];
 function openBlindBox(){
-  var today=new Date().toISOString().substring(0,10);
-  var lastDate=localStorage.getItem('jizhangben_checkin_date');
-  if(lastDate===today){showToast('今天已经拆过盲盒啦~明天再来吧 🎁','error');return;}
-  var fortune=fortunes[Math.floor(Math.random()*fortunes.length)];
-  var sticker=bonusStickers[Math.floor(Math.random()*bonusStickers.length)];
-  // 更新贴纸库
-  var unlocked=[]; try{unlocked=JSON.parse(localStorage.getItem('jizhangben_stickers')||'[]');}catch(e){}
-  if(unlocked.indexOf(sticker)<0) unlocked.push(sticker);
-  localStorage.setItem('jizhangben_stickers',JSON.stringify(unlocked));
-  localStorage.setItem('jizhangben_checkin_date',today);
-  // 弹窗展示
-  var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML='<div style="background:linear-gradient(135deg,#FFF0F3,#F8F0FB);border-radius:28px;padding:32px 24px;text-align:center;width:280px;animation:bounceIn 0.5s var(--bounce);">'+
-    '<div style="font-size:50px;animation:bounceIn 0.5s var(--bounce);">🎁</div>'+
-    '<div style="font-size:14px;font-weight:700;color:#C06070;margin:12px 0;">'+fortune.text+'</div>'+
-    '<div style="font-size:13px;color:var(--text-secondary);">'+fortune.advice+'</div>'+
-    '<div style="font-size:36px;margin:16px 0;">'+sticker+'</div>'+
-    '<div style="font-size:12px;color:var(--text-muted);">获得绝版贴纸！已收入贴纸库 🎀</div>'+
-    '<button class="btn btn-sm" style="background:var(--pink);color:white;margin-top:14px;" onclick="this.parentElement.parentElement.remove()">🍀 收下好运</button></div>';
-  overlay.onclick=function(e){if(e.target===overlay) overlay.remove();};
-  document.body.appendChild(overlay);
+  try {
+    var today=new Date().toISOString().substring(0,10);
+    if(lastCheckinDate===today){showToast('今天已经拆过盲盒啦~明天再来吧 🎁','error');return;}
+    var fortune=fortunes[Math.floor(Math.random()*fortunes.length)];
+    var sticker=bonusStickers[Math.floor(Math.random()*bonusStickers.length)];
+    // 更新贴纸库
+    if(!unlockedStickers||!Array.isArray(unlockedStickers)) unlockedStickers=[];
+  if(unlockedStickers.indexOf(sticker)<0) unlockedStickers.push(sticker);
+    lastCheckinDate=today;
+    apiPut('/api/kv/stickers', { value: JSON.stringify(unlockedStickers) }).catch(function(e){ console.log('save stickers error:', e); });
+    apiPut('/api/kv/checkin_date', { value: today }).catch(function(e){ console.log('save checkin error:', e); });
+    // 弹窗展示
+    var overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML='<div style="background:linear-gradient(135deg,#FFF0F3,#F8F0FB);border-radius:28px;padding:32px 24px;text-align:center;width:280px;animation:bounceIn 0.5s var(--bounce);">'+
+      '<div style="font-size:50px;animation:bounceIn 0.5s var(--bounce);">🎁</div>'+
+      '<div style="font-size:14px;font-weight:700;color:#C06070;margin:12px 0;">'+fortune.text+'</div>'+
+      '<div style="font-size:13px;color:var(--text-secondary);">'+fortune.advice+'</div>'+
+      '<div style="font-size:36px;margin:16px 0;">'+sticker+'</div>'+
+      '<div style="font-size:12px;color:var(--text-muted);">获得绝版贴纸！已收入贴纸库 🎀</div>'+
+      '<button class="btn btn-sm" style="background:var(--pink);color:white;margin-top:14px;" onclick="this.parentElement.parentElement.remove()">🍀 收下好运</button></div>';
+    overlay.onclick=function(e){if(e.target===overlay) overlay.remove();};
+    document.body.appendChild(overlay);
+  } catch(e) {
+    showToast('盲盒出错了：'+e.message, 'error');
+  }
 }
 
 // ==================== 电子桌宠 ====================
-var petImg=localStorage.getItem('jizhangben_petimg')||'';
+var petImg='';  // 由 loadAllData() 从服务器加载
 function initPet(){
   var pet=document.createElement('div');
   pet.id='desktopPet';
@@ -2096,7 +2461,7 @@ function changePetSkin(){
         var ctx=canvas.getContext('2d');
         ctx.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,200,200);
         petImg=canvas.toDataURL('image/jpeg',0.7);
-        localStorage.setItem('jizhangben_petimg',petImg);
+        apiPut('/api/kv/pet_img', { value: petImg }).catch(function(){});
         updatePetDisplay();
         showToast('🐱 换皮肤成功！可爱加倍~','success');
       }; img.src=e.target.result;
@@ -2140,7 +2505,7 @@ function showSettingsCatManage(){
     html+='<div style="padding:10px 0;border-bottom:1px solid var(--border);">'+
       '<div style="display:flex;align-items:center;gap:8px;font-weight:600;">'+(isPreset?'🔒 ':'')+catName+' ('+categories[catName].length+'个小类)'+
       (!isPreset?'<button class="btn btn-sm btn-outline" style="margin-left:auto;font-size:11px;" onclick="editCatMajor(\''+escapeHtml(catName)+'\')">✏️</button><button class="btn btn-sm" style="background:#E08090;color:white;font-size:11px;" onclick="deleteCatMajor(\''+escapeHtml(catName)+'\')">🗑</button>':'')+
-      '</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">'+categories[catName].join('、')+'</div></div>';
+      '</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">'+categories[catName].map(function(s){return escapeHtml(s);}).join('、')+'</div></div>';
   });
   html+='</div><button class="btn btn-primary" style="margin-top:10px;" onclick="addCatMajor()">+ 新增大类</button>';
   html+='<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-sm btn-outline" style="flex:1;" onclick="closeCatModal()">关闭</button></div>';
@@ -2178,7 +2543,7 @@ function deleteCatMajor(catName){
   showSettingsCatManage(); showToast('大类已删除','success');
 }
 
-init();
+startup();
 </script>
 
 </body>

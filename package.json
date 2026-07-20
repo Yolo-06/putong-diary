@@ -4,9 +4,15 @@
   "description": "记账本 - 个人记账应用",
   "private": true,
   "scripts": {
-    "test": "node tests/run-tests.js"
+    "test": "node tests/run-tests.js",
+    "start": "node server.js"
   },
   "devDependencies": {
     "jsdom": "^29.1.1"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "express": "^5.2.1",
+    "sql.js": "^1.14.1"
   }
 }

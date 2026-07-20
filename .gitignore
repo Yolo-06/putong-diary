@@ -24,3 +24,8 @@ npm-debug.log*
 # 质量门禁凭证文件（运行时生成，不需要提交）
 tests/.test-result.json
 tests/.quality-result.json
+
+# SQLite 数据库文件（本地数据，不提交）
+data.db
+data.db-wal
+data.db-shm
