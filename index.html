@@ -740,6 +740,64 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
 }
 .shake { animation: shake 0.4s ease; }
 
+/* ========== 许愿储钱罐 🐷 ========== */
+.piggy-card {
+  background: linear-gradient(135deg, #FFF0F3, #FFE0E8);
+  border-radius: var(--radius); padding: 18px; margin-bottom: 14px;
+  box-shadow: var(--shadow); cursor: pointer; transition: all 0.15s;
+}
+.piggy-card:active { transform: scale(0.98); }
+.piggy-card .piggy-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.piggy-card .piggy-icon {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #FFB7C5, #FF9AA2);
+  display: flex; align-items: center; justify-content: center; font-size: 24px;
+}
+.piggy-card .piggy-title { font-size: 15px; font-weight: 700; color: #C06070; }
+.piggy-card .piggy-sub { font-size: 11px; color: #D09090; }
+.piggy-card .piggy-amounts { display: flex; justify-content: space-around; text-align: center; margin-bottom: 10px; }
+.piggy-card .piggy-amounts .pa-val { font-size: 20px; font-weight: 700; color: var(--text); }
+.piggy-card .piggy-amounts .pa-label { font-size: 10px; color: var(--text-muted); }
+.piggy-progress-bar {
+  height: 10px; background: #FFE0E8; border-radius: 5px; overflow: hidden; margin-bottom: 12px;
+}
+.piggy-progress-fill {
+  height: 100%; background: linear-gradient(90deg, #FFB7C5, #FF9AA2);
+  border-radius: 5px; transition: width 0.5s ease;
+}
+.piggy-calendar {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center;
+}
+.piggy-calendar .cal-day-header { font-size: 10px; color: var(--text-muted); padding: 2px 0; }
+.piggy-calendar .cal-day {
+  aspect-ratio: 1; border-radius: 50%; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; cursor: default;
+}
+.piggy-calendar .cal-day.done { background: #FFF0F3; }
+.piggy-calendar .cal-day.today { background: #FFB7C5; color: white; font-weight: 700; animation: heartBeat 2s infinite ease-in-out; }
+.piggy-calendar .cal-day.missed { background: #F5F5F5; color: #D0C0C0; }
+.piggy-calendar .cal-day.future { color: #E8E0E0; }
+.piggy-checkin-btn {
+  width: 100%; padding: 12px; border-radius: 20px; border: none;
+  background: linear-gradient(135deg, #FFB7C5, #FF9AA2); color: white;
+  font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 12px rgba(255,183,197,0.3); transition: all 0.15s var(--bounce);
+}
+.piggy-checkin-btn:active { transform: scale(0.94); }
+.piggy-checkin-btn.done {
+  background: #E0E0E0; color: #A0A0A0; box-shadow: none; cursor: default;
+}
+@keyframes coinDrop {
+  0% { transform: translateY(-40px) scale(0.5); opacity: 0; }
+  50% { transform: translateY(10px) scale(1.3); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 0.8; }
+}
+.coin-particle {
+  position: fixed; font-size: 28px; pointer-events: none; z-index: 999;
+  animation: coinDrop 0.8s ease-out forwards;
+}
+
 /* ========== 响应式 ========== */
 @media (max-width: 414px) {
   .app { max-width: 100%; }
@@ -807,6 +865,9 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
       <button class="btn btn-sm" style="background:var(--lavender-light);color:#6B5B7B;border-radius:20px;padding:10px 16px;font-size:13px;" onclick="openTimeMachine()">🔮 旧时光</button>
     </div>
 
+
+    <!-- 许愿储钱罐 -->
+    <div id="piggyCard"></div>
 
     <!-- 预算提醒 -->
     <div id="budgetReminder" style="display:none;"></div>
@@ -883,6 +944,19 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
         <button class="kb-btn" style="grid-area:d1" onclick="kbInput('.')">.</button>
         <button class="kb-btn" style="grid-area:d2" onclick="kbInput('0')">0</button>
         <button class="kb-btn" style="grid-area:d3" onclick="kbInput('+')">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 储钱罐提醒弹窗 -->
+  <div class="modal-overlay" id="piggyReminderModal" style="display:none;">
+    <div class="modal-box" style="width:300px;">
+      <div style="font-size:48px;margin-bottom:8px;">🐷</div>
+      <h3 style="color:#C06070;">储钱罐饿肚肚啦！</h3>
+      <p id="piggyReminderMsg" style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin:8px 0;"></p>
+      <div class="modal-btns">
+        <button class="btn btn-sm btn-outline" onclick="closePiggyReminder()">💤 明天再说</button>
+        <button class="btn btn-sm" style="background:var(--pink);color:white;" onclick="closePiggyReminder();switchPage('add')">💰 去塞钱</button>
       </div>
     </div>
   </div>
@@ -1109,7 +1183,7 @@ async function apiPost(url, data) {
 }
 
 // ==================== 锁屏逻辑 ====================
-var lockMode = '';      // 'firstrun' | 'login'
+var lockMode = '';      // 'firstrun' | 'login' | 'reset'
 var pinInput = '';
 var pinConfirm = '';    // 首次设置时用于确认
 var lockResolve = null;
@@ -1162,7 +1236,7 @@ function onPinBack() {
 
 function onPinGo() {
   if (lockMode === 'firstrun') {
-    if (pinInput.length < 4) { showPinError('至少需要4位密码哦~'); return; }
+    if (pinInput.length !== 6) { showPinError('密码需要正好6位哦~'); return; }
     if (!pinConfirm) {
       // 第一次输入
       pinConfirm = pinInput; pinInput = '';
@@ -1188,11 +1262,15 @@ function onPinGo() {
         // 更新密码长度显示
         pinLength = data.pinLength || pinInput.length;
         if (lockResolve) lockResolve();
+        // 如果是从"忘记密码"来的，刷新页面走干净登录流程
+        if (lockMode === 'reset') {
+          location.reload();
+        }
       })
       .catch(function(e) { showPinError(e.message); pinConfirm = ''; });
   } else {
     // 登录模式
-    if (pinInput.length < 4) return;
+    if (pinInput.length < 6) return;
     document.getElementById('lockMessage').textContent = '正在开门...';
     apiPost('/api/auth/login', { password: pinInput })
       .then(function(data) {
@@ -1211,7 +1289,7 @@ function showFirstRunMode() {
   renderPinDots();
   buildPinKeypad();
   document.getElementById('lockMessage').textContent = '设置你的专属密码~';
-  document.getElementById('lockFooter').textContent = '💡 4~6位数字，记住哦~';
+  document.getElementById('lockFooter').textContent = '💡 设置6位数字密码，记住哦~';
   document.getElementById('lockReset').style.display = 'none';
 }
 
@@ -1227,19 +1305,34 @@ function showLoginMode(givenPinLength) {
 }
 
 function resetPassword() {
-  var answer = prompt('确定要重置密码吗？\n\n输入"我确定要重置"来确认：\n（注意：数据不会丢失，只是重新设置密码）');
-  if (answer !== '我确定要重置') {
-    if (answer && answer.length > 0) showToast('输入不正确，操作已取消', 'error');
-    return;
-  }
-  apiPost('/api/auth/reset-password', { confirm: '我确定要重置' })
-    .then(function() {
-      showFirstRunMode();
-      showToast('密码已重置，请设置新密码~', 'success');
-    })
-    .catch(function(e) {
-      alert('重置失败：' + (e.message || '未知错误'));
-    });
+  // 弹出自定义确认框代替 prompt
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:white;border-radius:24px;padding:28px 24px;text-align:center;width:280px;box-shadow:0 12px 32px rgba(0,0,0,0.2);">'+
+    '<div style="font-size:40px;margin-bottom:10px;">🔐</div>'+
+    '<h3 style="color:#C06070;margin-bottom:6px;">重置密码</h3>'+
+    '<p style="font-size:13px;color:var(--text-secondary);line-height:1.7;">重置后需要重新设置密码<br>你的记账数据不会丢失~</p>'+
+    '<div style="display:flex;gap:10px;margin-top:18px;justify-content:center;">'+
+      '<button class="btn btn-sm btn-outline" id="resetCancelBtn">取消</button>'+
+      '<button class="btn btn-sm" style="background:var(--pink);color:white;" id="resetConfirmBtn">确定重置</button>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+
+  document.getElementById('resetCancelBtn').onclick = function() { overlay.remove(); };
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  document.getElementById('resetConfirmBtn').onclick = function() {
+    overlay.remove();
+    apiPost('/api/auth/reset-password')
+      .then(function() {
+        lockMode = 'reset';
+        showFirstRunMode();
+        showToast('密码已重置，请设置新密码~', 'success');
+      })
+      .catch(function(e) {
+        alert('重置失败：' + (e.message || '请检查服务器是否在运行'));
+      });
+  };
 }
 
 function waitForAuth() {
@@ -1279,6 +1372,17 @@ async function loadAllData() {
     petImg = petV.value || '';
 
     rebuildCategories();
+
+    // 加载储钱罐提醒设置
+    var remindTimeV = await apiGet('/api/kv/savings_reminder_time').catch(function(){ return { value: '21:00' }; });
+    savingsReminderTime = remindTimeV.value || '21:00';
+    var remindEnV = await apiGet('/api/kv/savings_reminder_enabled').catch(function(){ return { value: '1' }; });
+    savingsReminderEnabled = remindEnV.value !== '0';
+    var lastRemindV = await apiGet('/api/kv/last_savings_remind_date').catch(function(){ return { value: '' }; });
+    lastSavingsRemindDate = lastRemindV.value || '';
+
+    // 加载储钱罐数据
+    await loadSavingsData();
   } catch(e) {
     console.error('数据加载失败:', e);
     showToast('数据加载失败，请刷新页面重试', 'error');
@@ -1445,7 +1549,7 @@ var currentListMonth = getCurrentMonth();
 var deleteTargetId = null;
 var selectedCat1 = '';
 var selectedMood = '';
-var selectedSticker = '';
+// 贴纸已改为直接插入文字，不再需要单独变量
 
 // 分类可爱别名映射
 var catAliases = {
@@ -1532,6 +1636,10 @@ function init(){
   refreshHome();
   refreshListPage();
   setInterval(autoCarousel,3500);
+  setInterval(checkSavingsReminder,60000);  // 每分钟检查一次储钱罐提醒
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden) checkSavingsReminder();
+  });
   initPet();
   // 初始化设置面板显示
   var bd=document.getElementById('budgetDisplay'); if(bd) bd.textContent='¥'+monthlyBudget;
@@ -1648,7 +1756,7 @@ function refreshHome(){
         if(rel) relatedHtml='<div class="j-related">💰 '+rel.cat1+' · '+rel.cat2+' -¥'+rel.amount.toFixed(2)+'</div>';
       }
       jhtml+='<div class="journal-card" onclick="openJournalDetail('+j.id+')">'+
-        '<div class="j-header"><span class="j-mood">'+(j.mood||'📝')+'</span>'+(j.sticker?'<span style="font-size:16px;">'+j.sticker+'</span>':'')+'<span class="j-time">'+j.time+'</span></div>'+
+        '<div class="j-header"><span class="j-mood">'+(j.mood||'📝')+'</span><span class="j-time">'+j.time+'</span></div>'+
         '<div class="j-content">'+escapeHtml(j.content)+'</div>'+imgHtml+relatedHtml+'</div>';
     });
     hj.innerHTML=jhtml;
@@ -1666,12 +1774,13 @@ function refreshHome(){
   }
 
   buildCarousel();
+  renderPiggyCard();
 }
 
 // ==================== 手账功能 ====================
 
 function openJournalEdit(relatedRecordId){
-  editingJournalId=null; selectedMood=''; selectedSticker=''; tempJournalPhotos=[];
+  editingJournalId=null; selectedMood=''; tempJournalPhotos=[];
   document.getElementById('journalContent').value='';
   document.getElementById('journalRelatedRecord').value=relatedRecordId||'';
   document.getElementById('journalDate').value=formatDate(new Date());
@@ -1696,15 +1805,26 @@ function pickMood(el){
   el.style.opacity='1'; el.style.transform='scale(1.3)';
 }
 
-// 贴纸选择器
+// 贴纸选择器（点击插入到文字光标位置）
 function renderStickerPicker(){
   var html='';
   stickerOptions.forEach(function(s){
-    html+='<span class="sticker-option'+(selectedSticker===s?' selected':'')+'" onclick="pickSticker(this,\''+s+'\')">'+s+'</span>';
+    html+='<span class="sticker-option" onclick="insertSticker(\''+s+'\')">'+s+'</span>';
   });
   document.getElementById('stickerPicker').innerHTML=html;
 }
-function pickSticker(el,s){ selectedSticker=s; document.querySelectorAll('.sticker-option').forEach(function(o){o.classList.remove('selected');}); el.classList.add('selected'); }
+function insertSticker(s){
+  var ta = document.getElementById('journalContent');
+  var start = ta.selectionStart;
+  var end = ta.selectionEnd;
+  var before = ta.value.substring(0, start);
+  var after = ta.value.substring(end);
+  ta.value = before + s + after;
+  // 光标移到贴纸后面
+  var newPos = start + s.length;
+  ta.setSelectionRange(newPos, newPos);
+  ta.focus();
+}
 
 // 撒花特效（保存手账成功时）
 function spawnConfetti(){
@@ -1784,7 +1904,7 @@ function saveJournal(){
   var j={
     id: editingJournalId||Date.now(),
     content:content, photos:tempJournalPhotos.slice(),
-    mood:selectedMood, sticker:selectedSticker,
+    mood:selectedMood, stickers:[],
     relatedRecordId:relatedId?parseInt(relatedId):null,
     date:date, time:time, createdAt:new Date().toISOString()
   };
@@ -1803,7 +1923,6 @@ function openJournalDetail(jid){
   var j=journals.find(function(x){return x.id===jid;});
   if(!j) return;
   var html='<div class="jd-mood">'+(j.mood||'📝')+'</div>';
-  if(j.sticker) html+='<div style="text-align:center;font-size:24px;margin-top:4px;">'+j.sticker+'</div>';
   html+='<div class="jd-date">'+j.date+' '+j.time+'</div>';
   html+='<div class="jd-content">'+escapeHtml(j.content)+'</div>';
   if(j.photos&&j.photos.length>0){
@@ -1830,7 +1949,7 @@ function editJournal(jid){
   closeJournalDetail();
   var j=journals.find(function(x){return x.id===jid;});
   if(!j) return;
-  editingJournalId=jid; selectedMood=j.mood||''; selectedSticker=j.sticker||''; tempJournalPhotos=(j.photos||[]).slice();
+  editingJournalId=jid; selectedMood=j.mood||''; tempJournalPhotos=(j.photos||[]).slice();
   document.getElementById('journalContent').value=j.content;
   document.getElementById('journalRelatedRecord').value=j.relatedRecordId||'';
   document.getElementById('journalDate').value=j.date;
@@ -1863,7 +1982,6 @@ function openTimeMachine(){
   html+='<div style="font-size:14px;color:var(--text-muted);margin-bottom:8px;">🔮 时光机带你回到...</div>';
   html+='<div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;">'+j.date+'</div>';
   html+='<div class="jd-mood">'+(j.mood||'📝')+'</div>';
-  if(j.sticker) html+='<div style="font-size:24px;">'+j.sticker+'</div>';
   html+='<div style="font-size:14px;color:var(--text);line-height:1.8;margin:12px 0;">'+escapeHtml(j.content)+'</div>';
   if(j.photos&&j.photos.length>0){
     html+='<img class="jd-photo" src="'+j.photos[0]+'" style="max-height:200px;object-fit:cover;">';
@@ -1901,7 +2019,28 @@ function refreshCatCandy(){
       '<div class="cc-circle" style="'+(selectedCat1===cat?'background:'+color+'30;':'')+'">'+icon+'</div>'+
       '<span>'+alias+'</span></div>';
   });
+  // 加一个自定义入口
+  html+='<div class="cat-candy-item" onclick="pickCustomCat()" style="opacity:0.7;">'+
+    '<div class="cc-circle" style="border:2px dashed var(--pink);">✏️</div>'+
+    '<span>自定义</span></div>';
+
   grid.innerHTML=html;
+}
+
+function pickCustomCat(){
+  var name = prompt('输入这个分类的名字~');
+  if (!name || !name.trim()) return;
+  name = name.trim();
+  selectedCat1 = name;
+  document.querySelectorAll('.cat-candy-item').forEach(function(i){i.classList.remove('selected');});
+  // 如果需要二级分类
+  var sub = prompt('具体是啥？（可选，直接点确定跳过）');
+  updateCat2Options('');
+  if (sub && sub.trim()) {
+    document.getElementById('cat2Select').innerHTML = '<option value="'+escapeHtml(sub.trim())+'">'+escapeHtml(sub.trim())+'</option>';
+  }
+  var badge = document.getElementById('selectedCatBadge');
+  badge.textContent = name; badge.style.display = 'inline-block';
 }
 function pickCandyCat(el,cat){
   selectedCat1=cat; updateCat2Options(cat);
@@ -2254,7 +2393,7 @@ function changePassword(){
   if(!oldPwd) return;
   var newPwd=prompt('请输入新密码（4~6位数字）：');
   if(!newPwd) return;
-  if(newPwd.length<4||newPwd.length>6){showToast('新密码需要4~6位数字哦~','error');return;}
+  if(newPwd.length!==6){showToast('新密码需要正好6位数字哦~','error');return;}
   if(!/^\d+$/.test(newPwd)){showToast('新密码只能是数字哦~','error');return;}
   var confirmPwd=prompt('请再次输入新密码确认：');
   if(newPwd!==confirmPwd){showToast('两次密码不一致，请重试','error');return;}
@@ -2420,6 +2559,247 @@ function openBlindBox(){
   }
 }
 
+// ==================== 许愿储钱罐 🐷 ====================
+var currentSavingsPlan = null;
+var savingsMonthLogs = {};
+var todayCheckedIn = false;
+var savingsReminderTime = '21:00';
+var savingsReminderEnabled = true;
+var lastSavingsRemindDate = '';
+
+function renderPiggyCard() {
+  var el = document.getElementById('piggyCard');
+  if (!el) return;
+
+  if (!currentSavingsPlan) {
+    // 无计划：显示引导卡片
+    el.innerHTML = '<div class="piggy-card" onclick="openPiggySetup()">'+
+      '<div class="piggy-header">'+
+        '<div class="piggy-icon">🐷</div>'+
+        '<div><div class="piggy-title">许愿储钱罐</div>'+
+        '<div class="piggy-sub">点击设置你的存钱目标吧~</div></div>'+
+      '</div></div>';
+    return;
+  }
+
+  var plan = currentSavingsPlan;
+  // 计算总已存金额
+  var totalSaved = 0;
+  for (var d in savingsMonthLogs) {
+    totalSaved += savingsMonthLogs[d].amount || 0;
+  }
+  // 估算：从计划开始日期累计所有打卡
+  var today = new Date().toISOString().substring(0,10);
+  var pct = plan.targetAmount > 0 ? Math.min(100, (totalSaved / plan.targetAmount * 100)) : 0;
+  var daysFromStart = Math.max(1, Math.floor((new Date(today) - new Date(plan.startDate)) / 86400000) + 1);
+  var expectedByNow = plan.dailyAmount * daysFromStart;
+
+  var html = '<div class="piggy-card">';
+  html += '<div class="piggy-header">';
+  html += '<div class="piggy-icon">🐷</div>';
+  html += '<div><div class="piggy-title">'+escapeHtml(plan.title)+'</div>';
+  html += '<div class="piggy-sub">目标 ¥'+plan.targetAmount.toFixed(0)+' · 每天存 ¥'+plan.dailyAmount.toFixed(0)+'</div></div>';
+  html += '<div style="margin-left:auto;font-size:11px;color:var(--text-muted);cursor:pointer;" onclick="event.stopPropagation();openPiggySetup()">✏️</div>';
+  html += '</div>';
+
+  // 进度条
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px;">';
+  html += '<span>已存 ¥'+totalSaved.toFixed(0)+'</span><span>'+pct.toFixed(0)+'%</span></div>';
+  html += '<div class="piggy-progress-bar"><div class="piggy-progress-fill" style="width:'+pct+'%;"></div></div>';
+
+  // 金额概览
+  html += '<div class="piggy-amounts">';
+  html += '<div><div class="pa-val">¥'+totalSaved.toFixed(0)+'</div><div class="pa-label">已储金额</div></div>';
+  html += '<div><div class="pa-val">¥'+(plan.targetAmount - totalSaved).toFixed(0)+'</div><div class="pa-label">还差多少</div></div>';
+  html += '<div><div class="pa-val">¥'+plan.dailyAmount.toFixed(0)+'</div><div class="pa-label">每日目标</div></div>';
+  html += '</div>';
+
+  // 打卡按钮
+  if (todayCheckedIn) {
+    html += '<button class="piggy-checkin-btn done">✅ 今天已投币</button>';
+  } else {
+    html += '<button class="piggy-checkin-btn" onclick="event.stopPropagation();doPiggyCheckin()">🪙 叮当投币</button>';
+  }
+
+  // 草莓日历
+  html += renderPiggyCalendar();
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderPiggyCalendar() {
+  var today = new Date();
+  var year = today.getFullYear();
+  var month = today.getMonth();
+  var daysInMonth = new Date(year, month+1, 0).getDate();
+  var firstDow = new Date(year, month, 1).getDay(); // 0=Sun
+  var todayStr = today.getFullYear()+'-'+String(month+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+
+  var headers = ['日','一','二','三','四','五','六'];
+  var html = '<div style="font-size:11px;color:var(--text-muted);margin:10px 0 4px;">📅 '+year+'年'+(month+1)+'月</div>';
+  html += '<div class="piggy-calendar">';
+  headers.forEach(function(h) { html += '<div class="cal-day-header">'+h+'</div>'; });
+
+  // 填充空白格
+  for (var i = 0; i < firstDow; i++) { html += '<div class="cal-day"></div>'; }
+
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dateStr = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var cls = 'cal-day';
+    var emoji = '';
+
+    if (dateStr === todayStr) {
+      cls += ' today';
+      emoji = todayCheckedIn ? '🪙' : '🐷';
+    } else if (savingsMonthLogs[dateStr]) {
+      cls += ' done';
+      emoji = '🪙';
+    } else if (dateStr < todayStr) {
+      cls += ' missed';
+      emoji = '·';
+    } else {
+      cls += ' future';
+      emoji = '·';
+    }
+    html += '<div class="'+cls+'">'+emoji+'</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function openPiggySetup() {
+  var plan = currentSavingsPlan || {};
+  var title = prompt('给储钱罐起个名字吧~', plan.title || '');
+  if (!title || !title.trim()) return;
+  var target = prompt('目标总金额（元）：', plan.targetAmount || '');
+  if (!target || isNaN(parseFloat(target)) || parseFloat(target) <= 0) { showToast('金额不对哦~','error'); return; }
+  var daily = prompt('每天存多少（元）：', plan.dailyAmount || '');
+  if (!daily || isNaN(parseFloat(daily)) || parseFloat(daily) <= 0) { showToast('金额不对哦~','error'); return; }
+  var startDate = prompt('开始日期（YYYY-MM-DD）：', plan.startDate || new Date().toISOString().substring(0,10));
+  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) { showToast('日期格式不对哦~','error'); return; }
+
+  var payload = {
+    title: title.trim(), targetAmount: parseFloat(target),
+    dailyAmount: parseFloat(daily), startDate: startDate
+  };
+
+  apiPost('/api/savings/plan', payload)
+    .then(function() {
+      showToast('许愿储钱罐设置成功！🐷','success');
+      loadSavingsData().then(function() { renderPiggyCard(); });
+    })
+    .catch(function(e) { showToast(e.message || '保存失败','error'); });
+}
+
+async function loadSavingsData() {
+  try {
+    var data = await apiGet('/api/savings/current');
+    currentSavingsPlan = data.plan;
+    savingsMonthLogs = data.logs || {};
+    var today = new Date().toISOString().substring(0,10);
+    todayCheckedIn = !!savingsMonthLogs[today];
+  } catch(e) {
+    // 功能不可用时静默失败
+    currentSavingsPlan = null;
+    savingsMonthLogs = {};
+    todayCheckedIn = false;
+  }
+}
+
+function doPiggyCheckin() {
+  if (!currentSavingsPlan) return;
+  if (todayCheckedIn) { showToast('今天已经投过币啦~','error'); return; }
+
+  var today = new Date().toISOString().substring(0,10);
+  var plan = currentSavingsPlan;
+
+  // 自动创建一笔记账记录
+  var record = {
+    id: Date.now(),
+    amount: plan.dailyAmount,
+    cat1: '💰 收入',
+    cat2: '许愿储钱罐',
+    date: today,
+    note: '🐷 '+plan.title+' 打卡',
+    type: 'income',
+    photos: []
+  };
+
+  // 先保存记账记录
+  records.unshift(record);
+  saveRecords(records);
+
+  // 调用打卡 API
+  apiPost('/api/savings/checkin', { amount: plan.dailyAmount, date: today, recordId: record.id })
+    .then(function() {
+      todayCheckedIn = true;
+      savingsMonthLogs[today] = { amount: plan.dailyAmount, recordId: record.id };
+      renderPiggyCard();
+      spawnCoinDropAnim();
+      showToast('啪嗒！小金币落罐啦 💖','success');
+      petBubble('🪙');
+      refreshHome();
+    })
+    .catch(function(e) {
+      showToast(e.message || '打卡失败','error');
+    });
+}
+
+function spawnCoinDropAnim() {
+  var emojis = ['🪙','💰','💖','✨','🐷','💎'];
+  for (var i = 0; i < 8; i++) {
+    setTimeout(function() {
+      var e = document.createElement('div');
+      e.className = 'coin-particle';
+      e.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      e.style.left = (30 + Math.random() * 40) + '%';
+      e.style.top = '30%';
+      e.style.animationDuration = (0.6 + Math.random() * 0.6) + 's';
+      document.body.appendChild(e);
+      setTimeout(function() { e.remove(); }, 1500);
+    }, i * 80);
+  }
+}
+
+// ==================== 21:00 提醒逻辑 ====================
+function checkSavingsReminder() {
+  if (!savingsReminderEnabled) return;
+  if (!currentSavingsPlan) return;
+  if (todayCheckedIn) return;
+
+  var today = new Date().toISOString().substring(0,10);
+  if (lastSavingsRemindDate === today) return;
+
+  var now = new Date();
+  var timeParts = savingsReminderTime.split(':');
+  var remindHour = parseInt(timeParts[0]) || 21;
+  var remindMin = parseInt(timeParts[1]) || 0;
+
+  if (now.getHours() >= remindHour && now.getMinutes() >= remindMin) {
+    lastSavingsRemindDate = today;
+    apiPut('/api/kv/last_savings_remind_date', { value: today }).catch(function(){});
+    showPiggyReminder();
+  }
+}
+
+function showPiggyReminder() {
+  var plan = currentSavingsPlan;
+  var msgs = [
+    '🥺 小储钱罐咕噜噜响啦！今天还没有给它喂食哦~',
+    '🌙 月亮升起来啦，把今天的 ¥'+plan.dailyAmount.toFixed(0)+' 塞进小钱包再睡觉吧？',
+    '🐱 喵~ 今天的储钱罐还在饿肚肚！快来塞进第 '+(Object.keys(savingsMonthLogs).length+1)+' 笔小快乐吧~ 💖'
+  ];
+  var msg = msgs[Math.floor(Math.random() * msgs.length)];
+  document.getElementById('piggyReminderMsg').textContent = msg;
+  document.getElementById('piggyReminderModal').style.display = 'flex';
+  petBubble('🥺');
+}
+
+function closePiggyReminder() {
+  document.getElementById('piggyReminderModal').style.display = 'none';
+}
+
 // ==================== 电子桌宠 ====================
 var petImg='';  // 由 loadAllData() 从服务器加载
 function initPet(){
@@ -2503,7 +2883,7 @@ function showSettingsCatManage(){
     var isPreset=presetCategories.hasOwnProperty(catName);
     var color=catColors[catName]||'#64748B';
     html+='<div style="padding:10px 0;border-bottom:1px solid var(--border);">'+
-      '<div style="display:flex;align-items:center;gap:8px;font-weight:600;">'+(isPreset?'🔒 ':'')+catName+' ('+categories[catName].length+'个小类)'+
+      '<div style="display:flex;align-items:center;gap:8px;font-weight:600;">'+(isPreset?'🔒 ':'')+escapeHtml(catName)+' ('+categories[catName].length+'个小类)'+
       (!isPreset?'<button class="btn btn-sm btn-outline" style="margin-left:auto;font-size:11px;" onclick="editCatMajor(\''+escapeHtml(catName)+'\')">✏️</button><button class="btn btn-sm" style="background:#E08090;color:white;font-size:11px;" onclick="deleteCatMajor(\''+escapeHtml(catName)+'\')">🗑</button>':'')+
       '</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">'+categories[catName].map(function(s){return escapeHtml(s);}).join('、')+'</div></div>';
   });

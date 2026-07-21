@@ -185,6 +185,50 @@ async function main() {
     res = await httpRequest('GET', '/api/categories', null, token);
     testSync('空分类返回空对象', () => { assertEqual(Object.keys(res.body).length, 0); });
 
+    // ========== Part 2.5: 许愿储钱罐测试 ==========
+    console.log('\n🐷 许愿储钱罐测试');
+
+    // 获取当前计划（无计划时）
+    res = await httpRequest('GET', '/api/savings/current', null, token);
+    testSync('无计划时返回 null', () => { assertEqual(res.body.plan, null); });
+
+    // 创建计划
+    res = await httpRequest('POST', '/api/savings/plan', {
+      title: '迪士尼基金', targetAmount: 3000, dailyAmount: 50,
+      startDate: '2026-07-01'
+    }, token);
+    testSync('创建储钱计划成功', () => { assertEqual(res.body.ok, true); });
+
+    // 获取当前计划
+    res = await httpRequest('GET', '/api/savings/current', null, token);
+    testSync('获取计划返回数据', () => {
+      assertTrue(!!res.body.plan, '应有计划数据');
+      assertEqual(res.body.plan.title, '迪士尼基金');
+      assertEqual(res.body.plan.dailyAmount, 50);
+    });
+
+    // 执行打卡
+    res = await httpRequest('POST', '/api/savings/checkin', {
+      amount: 50, date: '2026-07-20', recordId: 999
+    }, token);
+    testSync('打卡成功', () => { assertEqual(res.body.ok, true); });
+
+    // 重复打卡应拒绝
+    res = await httpRequest('POST', '/api/savings/checkin', {
+      amount: 50, date: '2026-07-20'
+    }, token);
+    testSync('重复打卡应拒绝', () => { assertEqual(res.status, 400); });
+
+    // 获取当月日志
+    res = await httpRequest('GET', '/api/savings/current', null, token);
+    testSync('打卡后日志有记录', () => {
+      assertTrue(!!res.body.logs['2026-07-20'], '7月20日应有打卡记录');
+    });
+
+    // 撤销打卡
+    res = await httpRequest('DELETE', '/api/savings/checkin/2026-07-20', null, token);
+    testSync('撤销打卡成功', () => { assertEqual(res.body.ok, true); });
+
     // ========== Part 3: 权限测试 ==========
     console.log('\n🔒 权限测试');
 

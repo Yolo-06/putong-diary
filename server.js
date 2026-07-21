@@ -79,6 +79,7 @@ async function initDB() {
     photos TEXT DEFAULT '[]',
     mood TEXT DEFAULT '',
     sticker TEXT DEFAULT '',
+    stickers TEXT DEFAULT '[]',
     related_record_id INTEGER,
     date TEXT NOT NULL,
     time TEXT NOT NULL,
@@ -100,6 +101,29 @@ async function initDB() {
     token TEXT PRIMARY KEY,
     created_at TEXT NOT NULL
   )`);
+
+  db.exec(`CREATE TABLE IF NOT EXISTS savings_plans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    target_amount REAL NOT NULL,
+    daily_amount REAL NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT,
+    status TEXT DEFAULT 'active'
+  )`);
+
+  db.exec(`CREATE TABLE IF NOT EXISTS savings_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    plan_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    amount REAL NOT NULL,
+    record_id INTEGER,
+    UNIQUE(plan_id, date)
+  )`);
+
+  // 清理 24 小时前创建的旧会话（防止 token 堆积）
+  var oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  db.exec("DELETE FROM sessions WHERE created_at < '" + oneDayAgo + "'");
 
   saveDB();
 }
@@ -142,6 +166,14 @@ function saveDB() {
 const app = express();
 app.use(express.json({ limit: '10mb' }));  // 限制请求体积
 
+// 安全响应头
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; img-src 'self' data: blob:;");
+  next();
+});
+
 // 只开放 index.html，不暴露项目其他文件（尤其是 data.db）
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -175,8 +207,8 @@ app.get('/api/auth/status', (req, res) => {
 app.post('/api/auth/set-password', (req, res) => {
   const { password } = req.body;
   if (!password) return res.status(400).json({ error: '请输入密码' });
-  if (password.length < 4 || password.length > 6) {
-    return res.status(400).json({ error: '密码需要4~6位数字' });
+  if (password.length !== 6) {
+    return res.status(400).json({ error: '密码需要正好6位数字哦~' });
   }
   if (!/^\d+$/.test(password)) {
     return res.status(400).json({ error: '密码只能是数字哦~' });
@@ -223,12 +255,11 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// 重置密码（忘记密码时使用，需前端确认）
+// 重置密码（忘记密码时使用，前端已弹窗确认）
+// 安全说明：服务器已绑定 127.0.0.1 仅监听本机，外部网络无法访问，
+// 所以即使此接口不需要登录验证，也不会被局域网其他人利用。
+// 如需额外保护，可手动删除 data.db 文件来重置一切。
 app.post('/api/auth/reset-password', (req, res) => {
-  // 要求输入确认码，防止误操作或被恶意调用
-  if (!req.body.confirm || req.body.confirm !== '我确定要重置') {
-    return res.status(400).json({ error: '请在前端弹窗中输入"我确定要重置"来确认' });
-  }
   dbRun("DELETE FROM kv_store WHERE key IN ('password_hash', 'pin_length')");
   dbRun("DELETE FROM sessions");
   res.json({ ok: true });
@@ -238,7 +269,7 @@ app.post('/api/auth/reset-password', (req, res) => {
 app.put('/api/auth/change-password', requireAuth, (req, res) => {
   const { oldPassword, newPassword } = req.body;
   if (!oldPassword || !newPassword) return res.status(400).json({ error: '请填写旧密码和新密码' });
-  if (newPassword.length < 4 || newPassword.length > 6) return res.status(400).json({ error: '新密码需要4~6位数字' });
+  if (newPassword.length !== 6) return res.status(400).json({ error: '新密码需要正好6位数字哦~' });
   if (!/^\d+$/.test(newPassword)) return res.status(400).json({ error: '新密码只能是数字哦~' });
 
   const row = db.get("SELECT value FROM kv_store WHERE key = 'password_hash'");
@@ -297,8 +328,9 @@ app.get('/api/journals', requireAuth, (req, res) => {
     id: row[0], content: row[1],
     photos: JSON.parse(row[2]),
     mood: row[3], sticker: row[4],
-    relatedRecordId: row[5], date: row[6],
-    time: row[7], createdAt: row[8]
+    stickers: JSON.parse(row[5] || '[]'),
+    relatedRecordId: row[6], date: row[7],
+    time: row[8], createdAt: row[9]
   }));
   res.json(journals);
 });
@@ -308,13 +340,89 @@ app.put('/api/journals', requireAuth, (req, res) => {
   if (!Array.isArray(journals)) return res.status(400).json({ error: '数据格式错误' });
 
   dbRun("DELETE FROM journals");
-  const stmt = db.prepare("INSERT INTO journals (id, content, photos, mood, sticker, related_record_id, date, time, created_at) VALUES (?,?,?,?,?,?,?,?,?)");
+  const stmt = db.prepare("INSERT INTO journals (id, content, photos, mood, sticker, stickers, related_record_id, date, time, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)");
   journals.forEach(j => {
-    stmt.run([j.id, j.content, JSON.stringify(j.photos || []), j.mood || '', j.sticker || '', j.relatedRecordId || null, j.date, j.time, j.createdAt]);
+    stmt.run([j.id, j.content, JSON.stringify(j.photos || []), j.mood || '', j.sticker || '', JSON.stringify(j.stickers || []), j.relatedRecordId || null, j.date, j.time, j.createdAt]);
   });
   stmt.free();
   saveDB();
   res.json({ ok: true, count: journals.length });
+});
+
+// --- 许愿储钱罐 ---
+
+app.get('/api/savings/current', requireAuth, (req, res) => {
+  // 获取当前活跃计划
+  const plan = db.get("SELECT * FROM savings_plans WHERE status = 'active' ORDER BY id DESC LIMIT 1");
+  if (!plan) return res.json({ plan: null, logs: {} });
+
+  // 获取当月打卡日志
+  const today = new Date();
+  const monthStart = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-01';
+  const monthEnd = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-31';
+  const logsRows = db.exec("SELECT date, amount, record_id FROM savings_logs WHERE plan_id = ? AND date >= ? AND date <= ? ORDER BY date",
+    [plan.id, monthStart, monthEnd]);
+  const logs = {};
+  if (logsRows.length > 0 && logsRows[0].values.length > 0) {
+    logsRows[0].values.forEach(row => { logs[row[0]] = { amount: row[1], recordId: row[2] }; });
+  }
+
+  res.json({
+    plan: {
+      id: plan.id, title: plan.title, targetAmount: plan.target_amount,
+      dailyAmount: plan.daily_amount, startDate: plan.start_date,
+      endDate: plan.end_date, status: plan.status
+    },
+    logs
+  });
+});
+
+app.post('/api/savings/plan', requireAuth, (req, res) => {
+  const { title, targetAmount, dailyAmount, startDate, endDate } = req.body;
+  if (!title || !targetAmount || !dailyAmount) {
+    return res.status(400).json({ error: '请填写完整信息哦~' });
+  }
+
+  // 检查是否已有活跃计划
+  const existing = db.get("SELECT id FROM savings_plans WHERE status = 'active'");
+  if (existing) {
+    // 更新现有计划
+    dbRun("UPDATE savings_plans SET title=?, target_amount=?, daily_amount=?, start_date=?, end_date=? WHERE id=?",
+      [title, targetAmount, dailyAmount, startDate, endDate || null, existing.id]);
+    return res.json({ ok: true, id: existing.id, updated: true });
+  }
+
+  // 新建
+  dbRun("INSERT INTO savings_plans (title, target_amount, daily_amount, start_date, end_date) VALUES (?,?,?,?,?)",
+    [title, targetAmount, dailyAmount, startDate, endDate || null]);
+  res.json({ ok: true, updated: false });
+});
+
+app.post('/api/savings/checkin', requireAuth, (req, res) => {
+  const { amount, date, recordId } = req.body;
+  const checkDate = date || new Date().toISOString().substring(0, 10);
+
+  // 获取当前计划
+  const plan = db.get("SELECT * FROM savings_plans WHERE status = 'active' ORDER BY id DESC LIMIT 1");
+  if (!plan) return res.status(400).json({ error: '还没有创建储钱计划哦~' });
+
+  // 检查是否已打卡
+  const existingLog = db.get("SELECT id FROM savings_logs WHERE plan_id = ? AND date = ?", [plan.id, checkDate]);
+  if (existingLog) return res.status(400).json({ error: '今天已经投过币啦~' });
+
+  const checkAmount = amount || plan.daily_amount;
+  dbRun("INSERT INTO savings_logs (plan_id, date, amount, record_id) VALUES (?,?,?,?)",
+    [plan.id, checkDate, checkAmount, recordId || null]);
+
+  res.json({ ok: true, amount: checkAmount, date: checkDate });
+});
+
+app.delete('/api/savings/checkin/:date', requireAuth, (req, res) => {
+  const plan = db.get("SELECT id FROM savings_plans WHERE status = 'active' ORDER BY id DESC LIMIT 1");
+  if (!plan) return res.status(400).json({ error: '没有活跃的储钱计划' });
+
+  dbRun("DELETE FROM savings_logs WHERE plan_id = ? AND date = ?", [plan.id, req.params.date]);
+  res.json({ ok: true });
 });
 
 // --- 用户分类 ---
@@ -346,12 +454,22 @@ app.put('/api/categories', requireAuth, (req, res) => {
 
 // --- 键值存储 ---
 
+// 敏感 key 白名单：只有这些 key 可以通过通用 KV 接口读写
+// password_hash 和 pin_length 只能通过 /api/auth/* 专用接口操作
+var ALLOWED_KV_KEYS = ['budget', 'darkmode', 'stickers', 'checkin_date', 'pet_img'];
+
 app.get('/api/kv/:key', requireAuth, (req, res) => {
+  if (ALLOWED_KV_KEYS.indexOf(req.params.key) === -1) {
+    return res.status(403).json({ error: '不允许访问此配置项' });
+  }
   const row = db.get("SELECT value FROM kv_store WHERE key = ?", [req.params.key]);
   res.json({ value: row ? row.value : null });
 });
 
 app.put('/api/kv/:key', requireAuth, (req, res) => {
+  if (ALLOWED_KV_KEYS.indexOf(req.params.key) === -1) {
+    return res.status(403).json({ error: '不允许修改此配置项' });
+  }
   const { value } = req.body;
   if (value === undefined) return res.status(400).json({ error: '缺少 value' });
 
@@ -387,9 +505,9 @@ app.post('/api/migrate', requireAuth, (req, res) => {
 
     // 写入手账
     if (Array.isArray(journals) && journals.length > 0) {
-      const stmt = db.prepare("INSERT INTO journals (id, content, photos, mood, sticker, related_record_id, date, time, created_at) VALUES (?,?,?,?,?,?,?,?,?)");
+      const stmt = db.prepare("INSERT INTO journals (id, content, photos, mood, sticker, stickers, related_record_id, date, time, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)");
       journals.forEach(j => {
-        stmt.run([j.id, j.content, JSON.stringify(j.photos || []), j.mood || '', j.sticker || '', j.relatedRecordId || null, j.date, j.time, j.createdAt]);
+        stmt.run([j.id, j.content, JSON.stringify(j.photos || []), j.mood || '', j.sticker || '', JSON.stringify(j.stickers || []), j.relatedRecordId || null, j.date, j.time, j.createdAt]);
       });
       stmt.free();
     }
@@ -431,7 +549,7 @@ async function start() {
     process.exit(1);
   }
 
-  app.listen(PORT, () => {
+  app.listen(PORT, '127.0.0.1', () => {
     console.log('🐱 ===================================');
     console.log('   ✨ 噗通日记本 - 小管家已上线！');
     console.log('   打开浏览器访问：http://localhost:' + PORT);

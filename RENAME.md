@@ -10,6 +10,7 @@
 |----------|----------|----------|
 | 记账本 | ✨ 噗通日记本 | 页面标题 `<title>`、顶部栏 `.header-title` |
 | V2.0 | 少女治愈系 | 设计文档、README |
+| V3.0 | SQLite+密码锁 | 新增后端数据库和密码保护 |
 
 ---
 
@@ -95,23 +96,76 @@
 | 快捷按钮 | 🍱干饭 ☕奶茶 🛍️买买 🚇贴贴 | 首页快捷记账 |
 | 盲盒按钮 | 🎁 拆盲盒 | 每日签到 |
 | 时光机按钮 | 🔮 旧时光 | 随机回顾手账 |
+| 储钱罐卡片 | 🐷 许愿储钱罐 | 首页打卡进度+草莓日历 |
+| 投币按钮 | 🪙 叮当投币 | 一键完成今日存钱打卡 |
+| 提醒弹窗 | 猫咪催塞钱 | 21:00 未打卡的温馨提醒 |
 
 ---
 
-## 六、localStorage 键名规范
+## 六、数据存储命名规范
+
+### 6.1 SQLite 数据库（V3.0 新增）
+
+| 表名 / 文件名 | 说明 |
+|------|------|
+| `data.db` | SQLite 数据库文件，存在项目根目录 |
+| `records` 表 | 记账记录表 |
+| `journals` 表 | 手账记录表 |
+| `user_categories` 表 | 用户自定义分类表 |
+| `kv_store` 表 | 键值存储表（替代旧 localStorage） |
+| `sessions` 表 | 登录会话表 |
+| `savings_plans` 表 | 储钱计划表（title, target_amount, daily_amount, start_date, status） |
+| `savings_logs` 表 | 打卡记录表（plan_id, date, amount, record_id） |
+
+### 6.2 键值存储键名（kv_store）
 
 | 键名 | 格式 | 说明 |
 |------|------|------|
-| `jizhangben_records` | JSON数组 | 记账记录（核心数据） |
-| `jizhangben_journals` | JSON数组 | 手账记录 |
-| `jizhangben_usercats` | JSON对象 | 用户自定义分类 |
-| `jizhangben_budget` | 数字字符串 | 月度预算金额 |
-| `jizhangben_darkmode` | "0"/"1" | 暗黑模式开关 |
-| `jizhangben_petimg` | base64字符串 | 桌宠自定义图片 |
-| `jizhangben_stickers` | JSON数组 | 盲盒解锁贴纸 |
-| `jizhangben_checkin_date` | "YYYY-MM-DD" | 盲盒上次签到日期 |
+| `password_hash` | bcrypt 哈希 | 密码密文 |
+| `pin_length` | 数字字符串 | 密码长度（控制登录点数） |
+| `budget` | 数字字符串 | 月度预算金额 |
+| `darkmode` | "0"/"1" | 暗黑模式开关 |
+| `stickers` | JSON数组 | 盲盒解锁贴纸 |
+| `checkin_date` | "YYYY-MM-DD" | 盲盒上次签到日期 |
+| `pet_img` | base64 | 桌宠自定义图片 |
+| `savings_reminder_time` | "21:00" | 储钱罐提醒时间 |
+| `savings_reminder_enabled` | "1"/"0" | 提醒开关 |
+| `last_savings_remind_date` | "YYYY-MM-DD" | 上次提醒日期 |
 
-> 命名规范：所有键名以 `jizhangben_` 为前缀，避免与其他站点冲突。
+### 6.3 API 接口命名（V3.0 新增）
+
+| 方法 | 路径模式 | 说明 |
+|------|----------|------|
+| GET | `/api/auth/status` | 检查密码状态 |
+| POST | `/api/auth/set-password` | 首次设置密码 |
+| POST | `/api/auth/login` | 登录验证 |
+| POST | `/api/auth/logout` | 退出登录 |
+| POST | `/api/auth/reset-password` | 忘记密码重置 |
+| PUT | `/api/auth/change-password` | 修改密码 |
+| GET/PUT | `/api/records` | 记账记录读写 |
+| GET/PUT | `/api/journals` | 手账记录读写 |
+| GET/PUT | `/api/categories` | 用户分类读写 |
+| GET/PUT | `/api/kv/:key` | 键值存储读写 |
+| POST | `/api/migrate` | localStorage→数据库迁移 |
+| GET | `/api/savings/current` | 获取当前储钱计划+打卡日志 |
+| POST | `/api/savings/plan` | 创建或更新储钱计划 |
+| POST | `/api/savings/checkin` | 执行今日打卡（自动记账） |
+| DELETE | `/api/savings/checkin/:date` | 撤销某天打卡 |
+
+### 6.4 旧 localStorage 键名（V2，已废弃）
+
+| 键名 | 说明 | 迁移到 |
+|------|------|--------|
+| ~~`jizhangben_records`~~ | 记账记录 | → `/api/records` |
+| ~~`jizhangben_journals`~~ | 手账记录 | → `/api/journals` |
+| ~~`jizhangben_usercats`~~ | 自定义分类 | → `/api/categories` |
+| ~~`jizhangben_budget`~~ | 月度预算 | → `/api/kv/budget` |
+| ~~`jizhangben_darkmode`~~ | 暗黑模式 | → `/api/kv/darkmode` |
+| ~~`jizhangben_petimg`~~ | 桌宠图片 | → `/api/kv/pet_img` |
+| ~~`jizhangben_stickers`~~ | 贴纸数据 | → `/api/kv/stickers` |
+| ~~`jizhangben_checkin_date`~~ | 签到日期 | → `/api/kv/checkin_date` |
+
+> 命名规范：所有旧键名以 `jizhangben_` 为前缀。V3.0 改为 SQLite 存储，旧键名仅用于一次性数据迁移。
 
 ---
 
@@ -142,8 +196,9 @@
 ### 8.1 命名模式
 | 前缀 | 含义 | 示例 |
 |------|------|------|
-| `load*` | 从 localStorage 读取 | `loadRecords()`、`loadJournals()` |
-| `save*` | 写入 localStorage | `saveRecords()`、`saveJournals()` |
+| `api*` | 调用后端API（V3新增） | `apiGet()`、`apiPut()`、`apiPost()` |
+| `load*` | 读取数据（V3改为读内存） | `loadRecords()`、`loadJournals()` |
+| `save*` | 保存数据（V3改为调API） | `saveRecords()`、`saveJournals()` |
 | `show*` | 显示UI/Toast | `showToast()`、`showPhotoFull()` |
 | `open*` | 打开弹窗/面板 | `openJournalEdit()`、`openSettings()` |
 | `close*` | 关闭弹窗/面板 | `closeJournalEdit()`、`closeSettings()` |
@@ -155,6 +210,15 @@
 | `toggle*` | 切换状态 | `toggleDarkMode()`、`toggleCatSection()` |
 | `pick*` | 选择操作 | `pickMood()`、`pickSticker()` |
 | `switch*` | 切换模式 | `switchPage()`、`switchType()` |
+| `startup` | 应用启动入口（V3新增） | `startup()`（异步，替代旧 `init()`） |
+| `loadAll*` | 从服务器加载全量数据（V3新增） | `loadAllData()` |
+| `show*Mode` | 锁屏模式切换（V3新增） | `showFirstRunMode()`、`showLoginMode()` |
+| `onPin*` | PIN码键盘交互（V3新增） | `onPinDigit()`、`onPinBack()`、`onPinGo()` |
+| `insert*` | 贴纸插入文字（V3.1） | `insertSticker()`（贴纸直接插入 textarea 光标位置） |
+| `loadSavings*` | 加载储钱罐数据（V3.1新增） | `loadSavingsData()`、`renderPiggyCard()`、`doPiggyCheckin()` |
+| `spawnCoin*` | 金币落罐动画（V3.1新增） | `spawnCoinDropAnim()`（复用 confetti 模式） |
+| `check*Reminder` | 储钱罐提醒（V3.1新增） | `checkSavingsReminder()`、`showPiggyReminder()` |
+| `pickCustom*` | 临时自定义分类（V3.1新增） | `pickCustomCat()`（弹窗输入分类名） |
 
 ### 8.2 变量命名模式
 | 变量 | 含义 | 类型 |
@@ -175,6 +239,17 @@
 | `deleteTargetId` | 待删除的记录ID | number/null |
 | `monthlyBudget` | 月度预算金额 | number |
 | `petImg` | 桌宠自定义图片base64 | string |
+| `authToken` | 登录令牌（V3新增） | string |
+| `pinInput` | PIN码输入缓存（V3新增） | string |
+| `pinLength` | 密码位数（V3新增） | number |
+| `lockMode` | 锁屏模式（V3新增） | `'firstrun'` / `'login'` |
+| `unlockedStickers` | 盲盒已收集贴纸（V3新增） | string[] |
+| `lastCheckinDate` | 上次盲盒签到日（V3新增） | `'YYYY-MM-DD'` |
+| `darkModeSetting` | 暗黑模式状态缓存（V3新增） | `'0'` / `'1'` |
+| `currentSavingsPlan` | 当前储钱计划数据（V3.1新增） | object |
+| `todayCheckedIn` | 今天是否已打卡（V3.1新增） | boolean |
+| `savingsReminderTime` | 提醒时间（V3.1新增） | `'21:00'` |
+| `savingsMonthLogs` | 当月打卡日志（V3.1新增） | `{date: {amount, recordId}}` |
 
 ---
 
@@ -264,15 +339,21 @@
 
 | 要找什么 | 去哪里找 |
 |----------|----------|
-| 分类别名怎么改 | `catAliases` 对象（JS，约第1107行） |
-| 心情名称怎么改 | `moodNames` 对象（JS，约第1827行 / 1936行） |
-| 治愈语录怎么改 | `healingQuotes` 数组（JS，约第1125行） |
-| 贴纸选项怎么改 | `stickerOptions` 数组（JS，约第1123行） |
-| 幸运签怎么改 | `fortunes` 数组（JS，约第2024行） |
-| 绝版贴纸怎么改 | `bonusStickers` 数组（JS，约第2032行） |
-| 桌宠聊天文案 | `msgs` 数组（JS，约第2068行） |
-| 暗黑模式颜色 | CSS `body.dark-fairy-mode` 区块（约第585-696行） |
-| localStorage键名 | 见本文档第六章 |
-| 底部标签顺序 | HTML `.tab-bar`（约第904-917行） |
-| 软糖键盘布局 | CSS `.cute-keyboard`（约第270-296行） |
-| 页面切换逻辑 | JS `switchPage()`（约第1193行） |
+| 后端服务器代码 | `server.js`（项目根目录） |
+| 数据库表结构 | `server.js` → `CREATE TABLE` 语句 |
+| API 接口列表 | `server.js` → app.get/post/put 路由 |
+| 分类别名怎么改 | `catAliases` 对象（`index.html` JS 数据层） |
+| 心情名称怎么改 | `moodNames` 对象（`index.html` JS 图表函数） |
+| 治愈语录怎么改 | `healingQuotes` 数组（`index.html` JS 数据层） |
+| 贴纸选项怎么改 | `stickerOptions` 数组（`index.html` JS 数据层） |
+| 幸运签怎么改 | `fortunes` 数组（`index.html` JS 盲盒函数） |
+| 绝版贴纸怎么改 | `bonusStickers` 数组（`index.html` JS 盲盒函数） |
+| 桌宠聊天文案 | `msgs` 数组（`index.html` JS 桌宠函数） |
+| 暗黑模式颜色 | CSS `body.dark-fairy-mode` 区块 |
+| 锁屏样式和逻辑 | CSS `.lock-*` + JS `showLoginMode()` |
+| 密码修改/重置 | `server.js` 认证接口 + `index.html` JS |
+| SQLite 键值存储键名 | 见本文档 §6.2 |
+| 底部标签顺序 | HTML `.tab-bar` |
+| 软糖键盘布局 | CSS `.cute-keyboard` |
+| 页面切换逻辑 | JS `switchPage()` |
+| 应用启动流程 | JS `startup()`（异步入口） |
