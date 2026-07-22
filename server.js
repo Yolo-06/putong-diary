@@ -12,6 +12,7 @@ const fs = require('fs');
 const initSqlJs = require('sql.js');
 
 const PORT = process.env.PORT || 3456;
+const HOST = process.env.HOST || '127.0.0.1';  // 本地用 127.0.0.1，云端部署设为 '0.0.0.0'
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data.db');
 
 // ==================== 数据库初始化 ====================
@@ -549,7 +550,7 @@ async function start() {
     process.exit(1);
   }
 
-  app.listen(PORT, '127.0.0.1', () => {
+  app.listen(PORT, HOST, () => {
     console.log('🐱 ===================================');
     console.log('   ✨ 噗通日记本 - 小管家已上线！');
     console.log('   打开浏览器访问：http://localhost:' + PORT);
