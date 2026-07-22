@@ -2829,21 +2829,30 @@ var petImg='';  // 由 loadAllData() 从服务器加载
 function initPet(){
   var pet=document.createElement('div');
   pet.id='desktopPet';
-  pet.style.cssText='position:fixed;right:8px;bottom:85px;width:56px;height:56px;z-index:150;cursor:pointer;transition:transform 0.3s var(--bounce);animation:petFloat 3s ease-in-out infinite;display:flex;align-items:center;justify-content:center;';
+  pet.style.cssText='position:fixed;right:8px;bottom:85px;width:56px;height:56px;z-index:150;cursor:pointer;transition:transform 0.3s var(--bounce);animation:petFloat 3s ease-in-out infinite;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-user-select:none;user-select:none;';
   updatePetDisplay(pet);
-  pet.title='长按换皮肤~点我聊天~';
   // 点击：聊天
-  pet.onclick=function(){
+  pet.onclick=function(e){
     var msgs=['今天仙女也很棒，贴贴～🥰','记账的宝宝最可爱了！💖','摸摸头，好运+1 🍀','你已经是记账大师啦！🌟','累了就休息一下哦~ ☁️'];
     pet.style.transform='scale(1.3) rotate(-10deg)';
     setTimeout(function(){pet.style.transform='';},300);
     showToast(msgs[Math.floor(Math.random()*msgs.length)],'success');
   };
-  // 长按：换皮肤
+  // 长按：换皮肤（手机端兼容）
   var longPressTimer;
-  pet.onpointerdown=function(){longPressTimer=setTimeout(function(){changePetSkin();},800);};
-  pet.onpointerup=function(){clearTimeout(longPressTimer);};
-  pet.onpointerleave=function(){clearTimeout(longPressTimer);};
+  function startPress(e){
+    e.preventDefault();  // 阻止浏览器默认菜单
+    longPressTimer=setTimeout(function(){changePetSkin();},600);
+  }
+  function cancelPress(){clearTimeout(longPressTimer);}
+  pet.addEventListener('pointerdown',startPress);
+  pet.addEventListener('pointerup',cancelPress);
+  pet.addEventListener('pointerleave',cancelPress);
+  pet.addEventListener('pointercancel',cancelPress);
+  // 手机触屏兜底
+  pet.addEventListener('touchstart',startPress,{passive:false});
+  pet.addEventListener('touchend',cancelPress);
+  pet.addEventListener('touchcancel',cancelPress);
   document.body.appendChild(pet);
 }
 function updatePetDisplay(pet){
@@ -2852,10 +2861,14 @@ function updatePetDisplay(pet){
   else { pet.innerHTML='<span style="font-size:32px;">🐱</span>'; }
 }
 function changePetSkin(){
+  // 显示皮肤选择面板，让用户直接点击选择（避免JS触发input导致的"Javascript"标记）
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:center;justify-content:center;';
   var input=document.createElement('input');
-  input.type='file'; input.accept='image/*';
+  input.type='file'; input.accept='image/*'; input.style.display='none';
+  input.id='petSkinInput';
   input.onchange=function(){
-    var file=input.files[0]; if(!file) return;
+    var file=input.files[0]; if(!file){overlay.remove();return;}
     var reader=new FileReader();
     reader.onload=function(e){
       var img=new Image(); img.onload=function(){
@@ -2870,7 +2883,19 @@ function changePetSkin(){
         showToast('🐱 换皮肤成功！可爱加倍~','success');
       }; img.src=e.target.result;
     }; reader.readAsDataURL(file);
-  }; input.click();
+    overlay.remove();
+  };
+  overlay.innerHTML='<div style="background:white;border-radius:24px;padding:28px 24px;text-align:center;width:260px;box-shadow:0 12px 32px rgba(0,0,0,0.2);">'+
+    '<div style="font-size:40px;">🐱</div>'+
+    '<p style="font-size:14px;color:var(--text);margin:10px 0;">换一张可爱的萌宠图片吧~</p>'+
+    '<label for="petSkinInput" style="display:inline-block;background:var(--pink);color:white;padding:10px 24px;border-radius:20px;font-size:14px;cursor:pointer;margin-top:6px;">📷 选择照片</label>'+
+    '<div style="margin-top:8px;">'+
+      '<button class="btn btn-sm btn-outline" style="margin-top:8px;" onclick="this.closest(\'div\').parentElement.parentElement.remove()">取消</button>'+
+    '</div></div>';
+  overlay.appendChild(input);
+  // 先加到页面上，再绑定事件
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  document.body.appendChild(overlay);
 }
 // 桌宠浮动动画
 var petStyle=document.createElement('style');
