@@ -1364,7 +1364,7 @@ function resetPassword() {
         showToast('账号已重置，请重新注册~', 'success');
       })
       .catch(function(e) {
-        alert('重置失败：' + (e.message || '请检查服务器是否在运行'));
+        customAlert('重置失败：' + (e.message || '请检查服务器是否在运行'));
       });
   };
 }
@@ -1756,6 +1756,42 @@ function customPrompt(title, placeholder, defaultValue, type, callback) {
   });
 }
 
+// 自定义确认弹窗（替代 confirm）
+// message: 提示文字
+// callback: function(ok) — ok=true 用户点确定，ok=false 用户点取消
+function customConfirm(message, callback) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:white;border-radius:24px;padding:28px 24px;text-align:center;width:280px;box-shadow:0 12px 32px rgba(0,0,0,0.2);">'+
+    '<div style="font-size:36px;margin-bottom:10px;">💬</div>'+
+    '<p style="font-size:14px;color:var(--text);line-height:1.7;margin:10px 0;">' + escapeHtml(message) + '</p>'+
+    '<div style="display:flex;gap:10px;margin-top:18px;justify-content:center;">'+
+      '<button class="btn btn-sm btn-outline" id="ccCancelBtn">取消</button>'+
+      '<button class="btn btn-sm" style="background:var(--pink);color:white;min-width:80px;" id="ccOkBtn">确定</button>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+
+  function cleanup() { overlay.remove(); }
+  document.getElementById('ccOkBtn').onclick = function() { cleanup(); callback(true); };
+  document.getElementById('ccCancelBtn').onclick = function() { cleanup(); callback(false); };
+  overlay.onclick = function(e) { if (e.target === overlay) { cleanup(); callback(false); } };
+}
+
+// 自定义提示弹窗（替代 alert）
+function customAlert(message) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:white;border-radius:24px;padding:28px 24px;text-align:center;width:280px;box-shadow:0 12px 32px rgba(0,0,0,0.2);">'+
+    '<div style="font-size:36px;margin-bottom:10px;">😿</div>'+
+    '<p style="font-size:14px;color:var(--text);line-height:1.7;margin:10px 0;">' + escapeHtml(message) + '</p>'+
+    '<button class="btn btn-sm" style="background:var(--pink);color:white;min-width:80px;margin-top:12px;" id="caOkBtn">知道了</button>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+  function cleanup() { overlay.remove(); }
+  document.getElementById('caOkBtn').onclick = cleanup;
+  overlay.onclick = function(e) { if (e.target === overlay) cleanup(); };
+}
+
 // ==================== 首页 ====================
 
 var carouselIndex=0;
@@ -2048,9 +2084,11 @@ function editJournal(jid){
 
 function deleteJournal(jid){
   closeJournalDetail();
-  if(!confirm('确定要删除这条手账吗？')) return;
-  journals=journals.filter(function(j){return j.id!==jid;});
-  saveJournals(); refreshHome(); showToast('手账已删除','success');
+  customConfirm('确定要删除这条手账吗？', function(ok) {
+    if(!ok) return;
+    journals=journals.filter(function(j){return j.id!==jid;});
+    saveJournals(); refreshHome(); showToast('手账已删除','success');
+  });
 }
 
 // ==================== 时光机 ====================
@@ -3035,9 +3073,11 @@ function editCatMajor(catName){
 }
 
 function deleteCatMajor(catName){
-  if(!confirm('确定要删除大类「'+catName+'」吗？\n已有记录不会被删除。')) return;
-  delete userCategories[catName]; saveUserCategories(); userCategories=loadUserCategories(); rebuildCategories();
-  showSettingsCatManage(); showToast('大类已删除','success');
+  customConfirm('确定要删除大类「'+catName+'」吗？已有记录不会被删除。', function(ok) {
+    if(!ok) return;
+    delete userCategories[catName]; saveUserCategories(); userCategories=loadUserCategories(); rebuildCategories();
+    showSettingsCatManage(); showToast('大类已删除','success');
+  });
 }
 
 startup();
