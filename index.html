@@ -827,6 +827,9 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
     <div class="lock-footer" id="lockReset" style="display:none;margin-top:10px;">
       <a href="javascript:void(0)" onclick="resetPassword()" style="color:var(--text-muted);text-decoration:none;font-size:12px;">忘记密码？</a>
     </div>
+    <div class="lock-footer" id="lockRegister" style="display:none;margin-top:6px;">
+      <a href="javascript:void(0)" onclick="switchToRegister()" style="color:var(--pink);text-decoration:none;font-size:12px;">✨ 没有账号？点此注册</a>
+    </div>
   </div>
 </div>
 
@@ -931,7 +934,7 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
       <!-- 拍立得照片区 -->
       <div class="form-label">📷 留下证据</div>
       <div class="photo-area" id="photoArea">
-        <div class="photo-add" onclick="addPhoto()">＋</div>
+        <label class="photo-add" for="photoInput">＋</label>
       </div>
       <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotos(this)">
 
@@ -1126,7 +1129,7 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
     <div class="form-group">
       <label class="form-label">📷 插入美照</label>
       <div class="photo-area" id="journalPhotoArea">
-        <div class="photo-add" onclick="addJournalPhoto()">＋</div>
+        <label class="photo-add" for="journalPhotoInput">＋</label>
       </div>
       <input type="file" id="journalPhotoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handleJournalPhotos(this)">
     </div>
@@ -1310,6 +1313,7 @@ function showFirstRunMode() {
   document.getElementById('lockMessage').textContent = '设置你的专属密码~';
   document.getElementById('lockFooter').textContent = '💡 取个昵称 + 设置6位数字密码';
   document.getElementById('lockReset').style.display = 'none';
+  document.getElementById('lockRegister').style.display = 'none';
 }
 
 function showLoginMode(givenPinLength) {
@@ -1323,6 +1327,12 @@ function showLoginMode(givenPinLength) {
   document.getElementById('lockMessage').textContent = '输入昵称和密码进入你的小世界~';
   document.getElementById('lockFooter').textContent = '🐱 欢迎回来~';
   document.getElementById('lockReset').style.display = 'block';
+  document.getElementById('lockRegister').style.display = 'block';
+}
+
+// 从登录画面切换到注册画面
+function switchToRegister() {
+  showFirstRunMode();
 }
 
 function resetPassword() {
@@ -1902,7 +1912,7 @@ function handleJournalPhotos(input){
 
 function refreshJournalPhotoArea(){
   var area=document.getElementById('journalPhotoArea');
-  var html='<div class="photo-add" onclick="addJournalPhoto()">＋</div>';
+  var html='<label class="photo-add" for="journalPhotoInput">＋</label>';
   tempJournalPhotos.forEach(function(p,i){
     html+='<div class="photo-thumb-wrap"><img class="photo-thumb" src="'+p+'"><button class="photo-del" onclick="event.stopPropagation();tempJournalPhotos.splice('+i+',1);refreshJournalPhotoArea();">✕</button></div>';
   });
@@ -2145,7 +2155,7 @@ function compressImage(file,callback){
 
 function refreshPhotoArea(){
   var area=document.getElementById('photoArea');
-  var html='<div class="photo-add" onclick="addPhoto()">＋</div>';
+  var html='<label class="photo-add" for="photoInput">＋</label>';
   currentAddPhotos.forEach(function(p,i){
     html+='<div class="photo-thumb-wrap"><img class="photo-thumb" src="'+p+'"><button class="photo-del" onclick="event.stopPropagation();currentAddPhotos.splice('+i+',1);refreshPhotoArea();">✕</button></div>';
   });
