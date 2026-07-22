@@ -11,6 +11,8 @@
 | 记账本 | ✨ 噗通日记本 | 页面标题 `<title>`、顶部栏 `.header-title` |
 | V2.0 | 少女治愈系 | 设计文档、README |
 | V3.0 | SQLite+密码锁 | 新增后端数据库和密码保护 |
+| V3.1 | 安全加固+许愿储钱罐 | 多设备安全、贴纸插入、自定义分类 |
+| V4.0 | 多用户云端版 | 昵称注册登录、每人独立数据空间、Render 部署 |
 
 ---
 
@@ -85,6 +87,9 @@
 | `#moodDonut` | 心情甜甜圈 | SVG环形图 |
 | `#streakCard` | 连续记账里程碑 | 治愈页底部成就卡片 |
 | `#desktopPet` | 电子桌宠 | 右下角浮动萌宠 |
+| `#lockScreen` | 密码锁屏（V3）→ 昵称+密码锁屏（V4） | 打开 APP 首先看到的画面 |
+| `#lockUsernameInput` | 昵称输入框（V4 新增） | 锁屏页用户名输入 |
+| `#lockRegister` | 注册新账号入口（V4 新增） | 登录页底部"没有账号？点此注册" |
 
 ### 5.3 按钮命名
 | 代码标识 | 可爱文案 | 功能 |
@@ -104,25 +109,26 @@
 
 ## 六、数据存储命名规范
 
-### 6.1 SQLite 数据库（V3.0 新增）
+### 6.1 SQLite 数据库
 
 | 表名 / 文件名 | 说明 |
 |------|------|
 | `data.db` | SQLite 数据库文件，存在项目根目录 |
-| `records` 表 | 记账记录表 |
-| `journals` 表 | 手账记录表 |
-| `user_categories` 表 | 用户自定义分类表 |
-| `kv_store` 表 | 键值存储表（替代旧 localStorage） |
-| `sessions` 表 | 登录会话表 |
-| `savings_plans` 表 | 储钱计划表（title, target_amount, daily_amount, start_date, status） |
-| `savings_logs` 表 | 打卡记录表（plan_id, date, amount, record_id） |
+| `users` 表 | 用户表（V4 新增）：id, username, password_hash, pin_length, created_at |
+| `records` 表 | 记账记录表（V4：加 user_id 列） |
+| `journals` 表 | 手账记录表（V4：加 user_id 列） |
+| `user_categories` 表 | 用户自定义分类表（V4：复合主键 user_id+name） |
+| `kv_store` 表 | 键值存储表（V4：复合主键 user_id+key） |
+| `sessions` 表 | 登录会话表（V4：加 user_id 列） |
+| `savings_plans` 表 | 储钱计划表（V4：加 user_id 列） |
+| `savings_logs` 表 | 打卡记录表（V4：加 user_id 列） |
 
-### 6.2 键值存储键名（kv_store）
+### 6.2 键值存储键名（kv_store，V4：按用户隔离）
 
 | 键名 | 格式 | 说明 |
 |------|------|------|
-| `password_hash` | bcrypt 哈希 | 密码密文 |
-| `pin_length` | 数字字符串 | 密码长度（控制登录点数） |
+| ~~`password_hash`~~ | — | V4 已移至 `users` 表 |
+| ~~`pin_length`~~ | — | V4 已移至 `users` 表 |
 | `budget` | 数字字符串 | 月度预算金额 |
 | `darkmode` | "0"/"1" | 暗黑模式开关 |
 | `stickers` | JSON数组 | 盲盒解锁贴纸 |
@@ -132,25 +138,26 @@
 | `savings_reminder_enabled` | "1"/"0" | 提醒开关 |
 | `last_savings_remind_date` | "YYYY-MM-DD" | 上次提醒日期 |
 
-### 6.3 API 接口命名（V3.0 新增）
+### 6.3 API 接口命名
 
-| 方法 | 路径模式 | 说明 |
-|------|----------|------|
-| GET | `/api/auth/status` | 检查密码状态 |
-| POST | `/api/auth/set-password` | 首次设置密码 |
-| POST | `/api/auth/login` | 登录验证 |
-| POST | `/api/auth/logout` | 退出登录 |
-| POST | `/api/auth/reset-password` | 忘记密码重置 |
-| PUT | `/api/auth/change-password` | 修改密码 |
-| GET/PUT | `/api/records` | 记账记录读写 |
-| GET/PUT | `/api/journals` | 手账记录读写 |
-| GET/PUT | `/api/categories` | 用户分类读写 |
-| GET/PUT | `/api/kv/:key` | 键值存储读写 |
-| POST | `/api/migrate` | localStorage→数据库迁移 |
-| GET | `/api/savings/current` | 获取当前储钱计划+打卡日志 |
-| POST | `/api/savings/plan` | 创建或更新储钱计划 |
-| POST | `/api/savings/checkin` | 执行今日打卡（自动记账） |
-| DELETE | `/api/savings/checkin/:date` | 撤销某天打卡 |
+| 方法 | 路径模式 | 说明 | 版本 |
+|------|----------|------|------|
+| GET | `/api/auth/status` | 检查是否有任何用户（可传 `?username=` 查特定用户） | V4 更新 |
+| POST | `/api/auth/register` | **用户注册**（昵称+密码，V4 新增，替代旧 set-password） | V4 新增 |
+| ~~POST~~ | ~~`/api/auth/set-password`~~ | ~~首次设置密码~~ → V4 已替换为 `/api/auth/register` | 已废弃 |
+| POST | `/api/auth/login` | 登录验证（V4：增加 username 字段） | V4 更新 |
+| POST | `/api/auth/logout` | 退出登录 | V3 |
+| POST | `/api/auth/reset-password` | 重置账号（V4：需传 username，清空该用户全部数据） | V4 更新 |
+| PUT | `/api/auth/change-password` | 修改密码（V4：按当前登录用户改） | V3 |
+| GET/PUT | `/api/records` | 记账记录读写（V4：按 user_id 隔离） | V4 更新 |
+| GET/PUT | `/api/journals` | 手账记录读写（V4：按 user_id 隔离） | V4 更新 |
+| GET/PUT | `/api/categories` | 用户分类读写（V4：按 user_id 隔离） | V4 更新 |
+| GET/PUT | `/api/kv/:key` | 键值存储读写（V4：按 user_id 隔离） | V4 更新 |
+| POST | `/api/migrate` | localStorage→数据库迁移（V4：迁移到当前用户） | V4 更新 |
+| GET | `/api/savings/current` | 获取当前储钱计划+打卡日志（V4：按 user_id） | V4 更新 |
+| POST | `/api/savings/plan` | 创建或更新储钱计划（V4：按 user_id） | V4 更新 |
+| POST | `/api/savings/checkin` | 执行今日打卡（V4：按 user_id） | V4 更新 |
+| DELETE | `/api/savings/checkin/:date` | 撤销某天打卡（V4：按 user_id） | V4 更新 |
 
 ### 6.4 旧 localStorage 键名（V2，已废弃）
 
@@ -188,6 +195,7 @@
 | `cp-*` | cat-picker-* | 分类选择弹窗 |
 | `qb-*` | quick-btn-* | 快捷按钮 |
 | `pw-*` | photo-wall-* | 照片墙 |
+| `lk-*` | lock-* | 锁屏相关（V3 新增） |
 
 ---
 
@@ -196,9 +204,9 @@
 ### 8.1 命名模式
 | 前缀 | 含义 | 示例 |
 |------|------|------|
-| `api*` | 调用后端API（V3新增） | `apiGet()`、`apiPut()`、`apiPost()` |
-| `load*` | 读取数据（V3改为读内存） | `loadRecords()`、`loadJournals()` |
-| `save*` | 保存数据（V3改为调API） | `saveRecords()`、`saveJournals()` |
+| `api*` | 调用后端API | `apiGet()`、`apiPut()`、`apiPost()` |
+| `load*` | 读取数据 | `loadRecords()`、`loadJournals()` |
+| `save*` | 保存数据 | `saveRecords()`、`saveJournals()` |
 | `show*` | 显示UI/Toast | `showToast()`、`showPhotoFull()` |
 | `open*` | 打开弹窗/面板 | `openJournalEdit()`、`openSettings()` |
 | `close*` | 关闭弹窗/面板 | `closeJournalEdit()`、`closeSettings()` |
@@ -208,48 +216,51 @@
 | `draw*` | 绘制图表 | `drawCharts()` |
 | `spawn*` | 生成特效粒子 | `spawnCoinRain()`、`spawnHeart()` |
 | `toggle*` | 切换状态 | `toggleDarkMode()`、`toggleCatSection()` |
-| `pick*` | 选择操作 | `pickMood()`、`pickSticker()` |
-| `switch*` | 切换模式 | `switchPage()`、`switchType()` |
-| `startup` | 应用启动入口（V3新增） | `startup()`（异步，替代旧 `init()`） |
-| `loadAll*` | 从服务器加载全量数据（V3新增） | `loadAllData()` |
-| `show*Mode` | 锁屏模式切换（V3新增） | `showFirstRunMode()`、`showLoginMode()` |
-| `onPin*` | PIN码键盘交互（V3新增） | `onPinDigit()`、`onPinBack()`、`onPinGo()` |
-| `insert*` | 贴纸插入文字（V3.1） | `insertSticker()`（贴纸直接插入 textarea 光标位置） |
-| `loadSavings*` | 加载储钱罐数据（V3.1新增） | `loadSavingsData()`、`renderPiggyCard()`、`doPiggyCheckin()` |
-| `spawnCoin*` | 金币落罐动画（V3.1新增） | `spawnCoinDropAnim()`（复用 confetti 模式） |
-| `check*Reminder` | 储钱罐提醒（V3.1新增） | `checkSavingsReminder()`、`showPiggyReminder()` |
-| `pickCustom*` | 临时自定义分类（V3.1新增） | `pickCustomCat()`（弹窗输入分类名） |
+| `pick*` | 选择操作 | `pickMood()`、`pickCandyCat()` |
+| `switch*` | 切换模式 | `switchPage()`、`switchType()`、`switchToRegister()`（V4 新增） |
+| `custom*` | 自定义弹窗（V4 新增，替代浏览器 prompt/alert/confirm） | `customPrompt()`、`customConfirm()`、`customAlert()` |
+| `startup` | 应用启动入口（V3 新增） | `startup()`（异步） |
+| `loadAll*` | 从服务器加载全量数据 | `loadAllData()` |
+| `show*Mode` | 锁屏模式切换 | `showFirstRunMode()`、`showLoginMode()` |
+| `onPin*` | PIN码键盘交互 | `onPinDigit()`、`onPinBack()`、`onPinGo()` |
+| `insert*` | 贴纸插入文字 | `insertSticker()`（贴纸直接插入 textarea 光标位置） |
+| `loadSavings*` | 加载储钱罐数据 | `loadSavingsData()`、`renderPiggyCard()`、`doPiggyCheckin()` |
+| `spawnCoin*` | 金币落罐动画 | `spawnCoinDropAnim()` |
+| `check*Reminder` | 储钱罐提醒 | `checkSavingsReminder()`、`showPiggyReminder()` |
+| `pickCustom*` | 临时自定义分类 | `pickCustomCat()` |
+| `changePet*` | 桌宠换肤 | `changePetSkin()`（V4 更新：弹窗选图替代 JS click） |
+| `add*Major` | 分类管理 | `addCatMajor()`、`editCatMajor()`、`deleteCatMajor()` |
 
 ### 8.2 变量命名模式
-| 变量 | 含义 | 类型 |
-|------|------|------|
-| `kbAmount` | 软糖键盘输入的金额字符串 | string |
-| `recordType` | 当前记账类型 | `'expense'` / `'income'` |
-| `selectedCat1` | 当前选中的一级分类 | string |
-| `selectedMood` | 当前选中的心情emoji | string |
-| `selectedSticker` | 当前选中的贴纸emoji | string |
-| `currentAddPhotos` | 记账页临时照片数组 | string[] |
-| `tempJournalPhotos` | 手账编辑临时照片数组 | string[] |
-| `currentListMonth` | 账单页当前查看月份 | `'YYYY-MM'` |
-| `carouselIndex` | 轮播图当前页码 | number |
-| `catExpanded` | 分类区域是否展开 | boolean |
-| `showChart` | 是否显示统计图表 | boolean |
-| `editingJournalId` | 正在编辑的手账ID | number/null |
-| `lastSavedRecordId` | 最近保存的记账ID | number/null |
-| `deleteTargetId` | 待删除的记录ID | number/null |
-| `monthlyBudget` | 月度预算金额 | number |
-| `petImg` | 桌宠自定义图片base64 | string |
-| `authToken` | 登录令牌（V3新增） | string |
-| `pinInput` | PIN码输入缓存（V3新增） | string |
-| `pinLength` | 密码位数（V3新增） | number |
-| `lockMode` | 锁屏模式（V3新增） | `'firstrun'` / `'login'` |
-| `unlockedStickers` | 盲盒已收集贴纸（V3新增） | string[] |
-| `lastCheckinDate` | 上次盲盒签到日（V3新增） | `'YYYY-MM-DD'` |
-| `darkModeSetting` | 暗黑模式状态缓存（V3新增） | `'0'` / `'1'` |
-| `currentSavingsPlan` | 当前储钱计划数据（V3.1新增） | object |
-| `todayCheckedIn` | 今天是否已打卡（V3.1新增） | boolean |
-| `savingsReminderTime` | 提醒时间（V3.1新增） | `'21:00'` |
-| `savingsMonthLogs` | 当月打卡日志（V3.1新增） | `{date: {amount, recordId}}` |
+| 变量 | 含义 | 类型 | 版本 |
+|------|------|------|------|
+| `kbAmount` | 软糖键盘输入的金额字符串 | string | |
+| `recordType` | 当前记账类型 | `'expense'` / `'income'` | |
+| `selectedCat1` | 当前选中的一级分类 | string | |
+| `selectedMood` | 当前选中的心情emoji | string | |
+| `currentAddPhotos` | 记账页临时照片数组 | string[] | |
+| `tempJournalPhotos` | 手账编辑临时照片数组 | string[] | |
+| `currentListMonth` | 账单页当前查看月份 | `'YYYY-MM'` | |
+| `carouselIndex` | 轮播图当前页码 | number | |
+| `catExpanded` | 分类区域是否展开 | boolean | |
+| `showChart` | 是否显示统计图表 | boolean | |
+| `editingJournalId` | 正在编辑的手账ID | number/null | |
+| `lastSavedRecordId` | 最近保存的记账ID | number/null | |
+| `deleteTargetId` | 待删除的记录ID | number/null | |
+| `monthlyBudget` | 月度预算金额 | number | |
+| `petImg` | 桌宠自定义图片base64 | string | |
+| `authToken` | 登录令牌 | string | V3 |
+| `pinInput` | PIN码输入缓存 | string | V3 |
+| `pinLength` | 密码位数（固定 6 位） | number | V3 |
+| `lockMode` | 锁屏模式 | `'firstrun'` / `'login'` / `'reset'` | V3 |
+| `lockUsername` | 锁屏页昵称（V4 新增） | string | V4 |
+| `unlockedStickers` | 盲盒已收集贴纸 | string[] | V3 |
+| `lastCheckinDate` | 上次盲盒签到日 | `'YYYY-MM-DD'` | V3 |
+| `darkModeSetting` | 暗黑模式状态缓存 | `'0'` / `'1'` | V3 |
+| `currentSavingsPlan` | 当前储钱计划数据 | object | V3.1 |
+| `todayCheckedIn` | 今天是否已打卡 | boolean | V3.1 |
+| `savingsReminderTime` | 提醒时间 | `'21:00'` | V3.1 |
+| `savingsMonthLogs` | 当月打卡日志 | `{date: {amount, recordId}}` | V3.1 |
 
 ---
 
@@ -276,6 +287,7 @@
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `id` | number | 时间戳唯一标识 |
+| `user_id` | number | 归属用户ID（V4 新增） |
 | `amount` | number | 金额（元） |
 | `cat1` | string | 一级分类（如 "🍽️ 餐饮饮食"） |
 | `cat2` | string | 二级分类（如 "午餐"） |
@@ -288,14 +300,25 @@
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `id` | number | 时间戳唯一标识 |
+| `user_id` | number | 归属用户ID（V4 新增） |
 | `content` | string | 正文内容 |
 | `photos` | string[] | base64 照片数组（最多9张） |
 | `mood` | string | 心情emoji（🥰🐶🥺🥱🐱💔） |
-| `sticker` | string | 贴纸emoji（🌸⭐️🎀等） |
+| `sticker` | string | 贴纸emoji |
+| `stickers` | string[] | 贴纸数组（V3.1 新增） |
 | `relatedRecordId` | number/null | 关联的记账记录ID |
 | `date` | string | 日期 "YYYY-MM-DD" |
 | `time` | string | 时间 "HH:MM" |
 | `createdAt` | string | ISO时间戳 |
+
+### 10.3 用户 (user)（V4 新增）
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | number | 自增主键 |
+| `username` | string | 昵称（3-20位，支持字母数字中文下划线，唯一） |
+| `password_hash` | string | bcrypt 密码哈希 |
+| `pin_length` | number | 密码长度（固定6） |
+| `created_at` | string | 注册时间 ISO ||
 
 ---
 
@@ -323,6 +346,9 @@
 | 设置 | ⚙️ 少女心配置馆 |
 | 暗黑模式 | 🌙 梦幻星空模式 |
 | 分类管理 | 🌸 小分类大变身 |
+| 注册账号（V4新增） | ✨ 没有账号？点此注册 |
+| 昵称提示（V4新增） | 给自己取个昵称~ |
+| 换肤弹窗（V4新增） | 换一张可爱的萌宠图片吧~ |
 
 ### 11.3 金额相关命名
 | 概念 | 可爱化表达 |
@@ -332,6 +358,32 @@
 | 结余 | 剩余宝藏 🌟 |
 | 预算 | 变富小预算 💰 |
 | 记账 | 塞进钱包 💖 |
+
+---
+
+## 十二、V4.0 多用户架构（新增）
+
+### 12.1 设计理念
+- **酒店式**：每人拿自己的房卡（昵称+密码）进自己的房间（独立数据）
+- **数据隔离**：所有表加 `user_id` 列，查询/写入全部带用户过滤
+- **requireAuth 中间件**：从 token 解析 user_id，挂载到 `req.userId`
+
+### 12.2 注册/登录流程
+```
+首次使用 → 输入昵称+6位密码 → POST /api/auth/register → 创建用户+返回token
+已有账号 → 输入昵称+密码 → POST /api/auth/login → 验证+返回token
+登录画面 → 点"✨ 没有账号？点此注册" → 切换为注册模式
+忘记密码 → 输入昵称 → 确认 → POST /api/auth/reset-password → 清空该用户→重新注册
+```
+
+### 12.3 iOS 弹窗问题修复
+- **问题**：iOS Safari 对 `prompt()`、`alert()`、`confirm()` 和 JS 触发的 `input.click()` 会显示"Javascript"标记
+- **修复**：
+  - 所有 `prompt()` → `customPrompt()`（自定义弹窗+输入框）
+  - 所有 `alert()` → `customAlert()`（自定义弹窗）
+  - 所有 `confirm()` → `customConfirm()`（自定义确认弹窗）
+  - 所有 `input.click()` → `<label for="input">`（直接用户手势触发）
+  - 桌宠换肤改为弹窗面板+label 选择图片
 
 ---
 
@@ -352,8 +404,10 @@
 | 暗黑模式颜色 | CSS `body.dark-fairy-mode` 区块 |
 | 锁屏样式和逻辑 | CSS `.lock-*` + JS `showLoginMode()` |
 | 密码修改/重置 | `server.js` 认证接口 + `index.html` JS |
+| 自定义弹窗（V4新增） | `customPrompt()` / `customConfirm()` / `customAlert()` |
 | SQLite 键值存储键名 | 见本文档 §6.2 |
 | 底部标签顺序 | HTML `.tab-bar` |
 | 软糖键盘布局 | CSS `.cute-keyboard` |
 | 页面切换逻辑 | JS `switchPage()` |
 | 应用启动流程 | JS `startup()`（异步入口） |
+| 多用户注册/登录（V4新增） | `server.js` users表 + `/api/auth/register` |
