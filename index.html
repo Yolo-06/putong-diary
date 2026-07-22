@@ -814,6 +814,14 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
     <p class="lock-sub" id="lockMessage">加载中...</p>
     <div class="pin-dots" id="pinDots"></div>
     <div class="pin-error" id="pinError">密码错误，再试一次吧~</div>
+    <!-- 用户名输入 -->
+    <div id="usernameArea" style="margin-bottom:10px;display:none;">
+      <input type="text" id="lockUsernameInput" placeholder="给自己取个昵称~"
+        style="width:200px;padding:10px 14px;border:2px solid var(--pink-light);border-radius:14px;
+        text-align:center;font-size:15px;outline:none;background:var(--card);color:var(--text);
+        transition:border-color 0.3s;"
+        maxlength="20" autocomplete="off">
+    </div>
     <div class="pin-keypad" id="pinKeypad"></div>
     <div class="lock-footer" id="lockFooter"></div>
     <div class="lock-footer" id="lockReset" style="display:none;margin-top:10px;">
@@ -1188,6 +1196,7 @@ var pinInput = '';
 var pinConfirm = '';    // 首次设置时用于确认
 var lockResolve = null;
 var pinLength = 6;      // 默认6位，后续从服务器获取
+var lockUsername = '';  // 当前操作的用户名
 
 function renderPinDots() {
   var html = '';
@@ -1235,6 +1244,14 @@ function onPinBack() {
 }
 
 function onPinGo() {
+  // 先获取用户名
+  var usernameInput = document.getElementById('lockUsernameInput');
+  var username = usernameInput.value.trim();
+  if (!username) { showPinError('请先给自己取个昵称哦~'); return; }
+  if (!/^[a-zA-Z0-9_一-龥]{3,20}$/.test(username)) {
+    showPinError('昵称3-20位，限字母数字中文下划线'); return;
+  }
+
   if (lockMode === 'firstrun') {
     if (pinInput.length !== 6) { showPinError('密码需要正好6位哦~'); return; }
     if (!pinConfirm) {
@@ -1249,33 +1266,33 @@ function onPinGo() {
     if (pinInput !== pinConfirm) {
       pinConfirm = ''; pinInput = '';
       updatePinDots(0);
-      document.getElementById('lockMessage').textContent = '设置你的专属密码~';
+      document.getElementById('lockMessage').textContent = '给 「'+username+'」 设置专属密码~';
       showPinError('两次密码不一致，重新设置吧~');
       return;
     }
-    // 密码确认一致，调用API
+    // 注册
+    lockUsername = username;
     document.getElementById('lockMessage').textContent = '正在创建你的专属小账本...';
-    apiPost('/api/auth/set-password', { password: pinInput })
+    apiPost('/api/auth/register', { username: username, password: pinInput })
       .then(function(data) {
         authToken = data.token;
         sessionStorage.setItem('jizhangben_token', authToken);
-        // 更新密码长度显示
+        sessionStorage.setItem('jizhangben_username', data.username);
         pinLength = data.pinLength || pinInput.length;
         if (lockResolve) lockResolve();
-        // 如果是从"忘记密码"来的，刷新页面走干净登录流程
-        if (lockMode === 'reset') {
-          location.reload();
-        }
+        if (lockMode === 'reset') { location.reload(); }
       })
       .catch(function(e) { showPinError(e.message); pinConfirm = ''; });
   } else {
     // 登录模式
     if (pinInput.length < 6) return;
+    lockUsername = username;
     document.getElementById('lockMessage').textContent = '正在开门...';
-    apiPost('/api/auth/login', { password: pinInput })
+    apiPost('/api/auth/login', { username: username, password: pinInput })
       .then(function(data) {
         authToken = data.token;
         sessionStorage.setItem('jizhangben_token', authToken);
+        sessionStorage.setItem('jizhangben_username', data.username);
         if (lockResolve) lockResolve();
       })
       .catch(function(e) { showPinError(e.message); });
@@ -1285,11 +1302,13 @@ function onPinGo() {
 function showFirstRunMode() {
   lockMode = 'firstrun';
   pinInput = ''; pinConfirm = '';
-  pinLength = 6;  // 首次设置时先显示6个点
+  pinLength = 6;
+  document.getElementById('lockUsernameInput').value = '';
+  document.getElementById('usernameArea').style.display = 'block';
   renderPinDots();
   buildPinKeypad();
   document.getElementById('lockMessage').textContent = '设置你的专属密码~';
-  document.getElementById('lockFooter').textContent = '💡 设置6位数字密码，记住哦~';
+  document.getElementById('lockFooter').textContent = '💡 取个昵称 + 设置6位数字密码';
   document.getElementById('lockReset').style.display = 'none';
 }
 
@@ -1297,24 +1316,29 @@ function showLoginMode(givenPinLength) {
   lockMode = 'login';
   pinInput = '';
   pinLength = givenPinLength || 6;
+  document.getElementById('lockUsernameInput').value = '';
+  document.getElementById('usernameArea').style.display = 'block';
   renderPinDots();
   buildPinKeypad();
-  document.getElementById('lockMessage').textContent = '输入密码进入你的小世界~';
+  document.getElementById('lockMessage').textContent = '输入昵称和密码进入你的小世界~';
   document.getElementById('lockFooter').textContent = '🐱 欢迎回来~';
   document.getElementById('lockReset').style.display = 'block';
 }
 
 function resetPassword() {
-  // 弹出自定义确认框代替 prompt
+  var usernameInput = document.getElementById('lockUsernameInput');
+  var username = usernameInput.value.trim();
+  if (!username) { showPinError('请先输入要重置的昵称'); return; }
+
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML = '<div style="background:white;border-radius:24px;padding:28px 24px;text-align:center;width:280px;box-shadow:0 12px 32px rgba(0,0,0,0.2);">'+
     '<div style="font-size:40px;margin-bottom:10px;">🔐</div>'+
     '<h3 style="color:#C06070;margin-bottom:6px;">重置密码</h3>'+
-    '<p style="font-size:13px;color:var(--text-secondary);line-height:1.7;">重置后需要重新设置密码<br>你的记账数据不会丢失~</p>'+
+    '<p style="font-size:13px;color:var(--text-secondary);line-height:1.7;">将重置「'+escapeHtml(username)+'」的账号<br>所有数据将被清空，请谨慎操作~</p>'+
     '<div style="display:flex;gap:10px;margin-top:18px;justify-content:center;">'+
       '<button class="btn btn-sm btn-outline" id="resetCancelBtn">取消</button>'+
-      '<button class="btn btn-sm" style="background:var(--pink);color:white;" id="resetConfirmBtn">确定重置</button>'+
+      '<button class="btn btn-sm" style="background:#E08090;color:white;" id="resetConfirmBtn">确认重置</button>'+
     '</div></div>';
   document.body.appendChild(overlay);
 
@@ -1323,11 +1347,11 @@ function resetPassword() {
 
   document.getElementById('resetConfirmBtn').onclick = function() {
     overlay.remove();
-    apiPost('/api/auth/reset-password')
+    apiPost('/api/auth/reset-password', { username: username })
       .then(function() {
         lockMode = 'reset';
         showFirstRunMode();
-        showToast('密码已重置，请设置新密码~', 'success');
+        showToast('账号已重置，请重新注册~', 'success');
       })
       .catch(function(e) {
         alert('重置失败：' + (e.message || '请检查服务器是否在运行'));
@@ -1420,7 +1444,7 @@ async function checkAndMigrate() {
 
 // ==================== 应用启动 ====================
 async function startup() {
-  // 1. 检查锁屏状态
+  // 1. 检查服务器是否有用户（不传用户名，查询整体状态）
   var status;
   try {
     status = await apiGet('/api/auth/status');
@@ -1429,13 +1453,13 @@ async function startup() {
     return;
   }
 
-  if (status.hasPassword) {
-    showLoginMode(status.pinLength || 6);
-    await waitForAuth();
+  // hasAnyUser：服务器是否有任何注册用户
+  if (status.hasAnyUser) {
+    showLoginMode(6);
   } else {
     showFirstRunMode();
-    await waitForAuth();
   }
+  await waitForAuth();
 
   // 2. 加载数据
   await loadAllData();

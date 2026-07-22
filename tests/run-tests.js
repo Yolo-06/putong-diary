@@ -30,7 +30,7 @@ function httpRequest(method, urlPath, body, token) {
   return new Promise((resolve, reject) => {
     const url = new URL(urlPath, 'http://localhost:3457');
     const options = {
-      hostname: url.hostname, port: url.port, path: url.pathname,
+      hostname: url.hostname, port: url.port, path: url.pathname + url.search,
       method: method, headers: { 'Content-Type': 'application/json' }
     };
     if (token) options.headers['Authorization'] = 'Bearer ' + token;
@@ -94,41 +94,42 @@ async function main() {
     // ========== Part 1: 认证测试 ==========
     console.log('\n🔐 认证测试');
 
-    // 检查未设置密码状态
+    var testUser = 'tu' + Date.now();
+
+    // 检查初始状态
     var res = await httpRequest('GET', '/api/auth/status');
-    testSync('初始状态：未设置密码', () => {
-      assertEqual(res.body.hasPassword, false);
+    testSync('初始状态：无任何用户', () => {
+      assertTrue(res.body.hasAnyUser === false || res.body.hasAnyUser === undefined,
+        '新数据库应无用户');
     });
 
-    // 设置密码
-    res = await httpRequest('POST', '/api/auth/set-password', { password: '123456' });
-    testSync('设置密码成功，返回 token', () => {
+    // 注册
+    res = await httpRequest('POST', '/api/auth/register', { username: testUser, password: '123456' });
+    testSync('注册成功，返回 token', () => {
       assertTrue(!!res.body.token, '应返回token');
       token = res.body.token;
     });
 
-    // 重复设置应失败
-    res = await httpRequest('POST', '/api/auth/set-password', { password: '999999' });
-    testSync('重复设置密码应拒绝', () => {
+    // 重复注册应失败
+    res = await httpRequest('POST', '/api/auth/register', { username: testUser, password: '999999' });
+    testSync('重复注册应拒绝', () => {
       assertEqual(res.status, 400);
     });
 
-    // 检查状态
-    res = await httpRequest('GET', '/api/auth/status');
-    testSync('设置后状态：已设置密码', () => {
-      assertEqual(res.body.hasPassword, true);
+    // 检查状态（传用户名）
+    res = await httpRequest('GET', '/api/auth/status?username=' + testUser);
+    testSync('注册后：该用户存在', () => {
+      assertEqual(res.body.exists, true);
     });
 
-    // 密码太短
-    var newToken = token;
-    // 先用原 token logout，再用新用户测试（但我们是单用户，直接测登录失败场景）
-    res = await httpRequest('POST', '/api/auth/login', { password: 'wrong' });
+    // 错误密码登录
+    res = await httpRequest('POST', '/api/auth/login', { username: testUser, password: 'wrong' });
     testSync('错误密码应返回 401', () => {
       assertEqual(res.status, 401);
     });
 
     // 正确登录
-    res = await httpRequest('POST', '/api/auth/login', { password: '123456' });
+    res = await httpRequest('POST', '/api/auth/login', { username: testUser, password: '123456' });
     testSync('正确密码登录成功', () => {
       assertTrue(!!res.body.token, '应返回新token');
     });
