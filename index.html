@@ -1201,6 +1201,7 @@ var pinConfirm = '';    // 首次设置时用于确认
 var lockResolve = null;
 var pinLength = 6;      // 默认6位，后续从服务器获取
 var lockUsername = '';  // 当前操作的用户名
+var justRegistered = false;  // 是否为刚注册的新账号（新账号不恢复备份）
 
 function renderPinDots() {
   var html = '';
@@ -1276,6 +1277,7 @@ function onPinGo() {
     }
     // 注册
     lockUsername = username;
+    justRegistered = true;  // 标记为新注册，不触发自动恢复
     document.getElementById('lockMessage').textContent = '正在创建你的专属小账本...';
     apiPost('/api/auth/register', { username: username, password: pinInput })
       .then(function(data) {
@@ -1291,6 +1293,7 @@ function onPinGo() {
     // 登录模式
     if (pinInput.length < 6) return;
     lockUsername = username;
+    justRegistered = false;  // 登录已有账号，允许恢复备份
     document.getElementById('lockMessage').textContent = '正在开门...';
     apiPost('/api/auth/login', { username: username, password: pinInput })
       .then(function(data) {
@@ -1391,7 +1394,8 @@ async function loadAllData() {
     userCategories = results[2] || {};
 
     // 如果服务器数据为空，尝试从本地备份恢复（按用户名隔离）
-    if (records.length === 0 && journals.length === 0 && Object.keys(userCategories).length === 0) {
+    // 刚注册的新账号不恢复，避免把旧账号数据带到新账号
+    if (!justRegistered && records.length === 0 && journals.length === 0 && Object.keys(userCategories).length === 0) {
       var uname = localStorage.getItem('jizhangben_username') || 'user';
       var backupRecords = localStorage.getItem(uname + '_jizhangben_records');
       var backupJournals = localStorage.getItem(uname + '_jizhangben_journals');
@@ -1450,7 +1454,9 @@ async function loadAllData() {
 
     // 加载储钱罐数据
     await loadSavingsData();
+    justRegistered = false;  // 重置标记
   } catch(e) {
+    justRegistered = false;
     console.error('数据加载失败:', e);
     showToast('数据加载失败，请刷新页面重试', 'error');
   }
