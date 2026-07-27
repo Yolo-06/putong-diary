@@ -1400,6 +1400,17 @@ async function loadAllData() {
           if (backupRecords) { records = JSON.parse(backupRecords); await apiPut('/api/records', records).catch(function(){}); }
           if (backupJournals) { journals = JSON.parse(backupJournals); await apiPut('/api/journals', journals).catch(function(){}); }
           if (backupCats) { userCategories = JSON.parse(backupCats); await apiPut('/api/categories', userCategories).catch(function(){}); }
+          // 恢复储钱罐备份
+          var backupSavings = localStorage.getItem(uname + '_savings_backup');
+          if (backupSavings) {
+            var sv = JSON.parse(backupSavings);
+            if (sv.plan) {
+              await apiPost('/api/savings/plan', {
+                title: sv.plan.title, targetAmount: sv.plan.targetAmount,
+                dailyAmount: sv.plan.dailyAmount, startDate: sv.plan.startDate
+              }).catch(function(){});
+            }
+          }
           showToast('检测到本地备份，数据已自动恢复~ 💾', 'success');
         } catch(e) { console.log('恢复备份失败:', e); }
       }
@@ -2856,8 +2867,14 @@ async function loadSavingsData() {
     savingsMonthLogs = data.logs || {};
     var today = new Date().toISOString().substring(0,10);
     todayCheckedIn = !!savingsMonthLogs[today];
+    // 本地备份储钱罐数据
+    var uname = localStorage.getItem('jizhangben_username') || 'user';
+    try {
+      localStorage.setItem(uname + '_savings_backup', JSON.stringify({
+        plan: currentSavingsPlan, logs: savingsMonthLogs
+      }));
+    } catch(e) {}
   } catch(e) {
-    // 功能不可用时静默失败
     currentSavingsPlan = null;
     savingsMonthLogs = {};
     todayCheckedIn = false;
