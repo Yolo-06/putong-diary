@@ -1074,6 +1074,7 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
       <div class="settings-item" onclick="closeSettings();showSettingsCatManage()">🌸 小分类大变身 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="toggleDarkMode()">🌙 梦幻星空模式 <span id="darkModeStatus" style="font-size:12px;color:var(--text-muted);">关</span></div>
       <div class="settings-item" onclick="changePassword()">🔐 修改密码 <span class="si-arrow">▶</span></div>
+      <div class="settings-item" onclick="doLogout()" style="color:#E08090;">🚪 退出登录 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="setBudget()">💰 变富小预算（当前 <span id="budgetDisplay">¥5000</span>） <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="closeSettings();exportCSV(currentListMonth)">📂 魔法数据导出 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="exportFullBackup()">💾 完整备份（含照片） <span class="si-arrow">▶</span></div>
@@ -2545,6 +2546,21 @@ function exportFullBackup(){
   a.href=url; a.download='记账本_完整备份_'+formatDate(new Date())+'.json';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   showToast('完整备份已导出（含照片和手账）','success');
+}
+
+// 退出登录
+function doLogout(){
+  customConfirm('确定要退出登录吗？退出后需重新输入昵称和密码。', function(ok) {
+    if (!ok) return;
+    // 清除登录状态
+    localStorage.removeItem('jizhangben_token');
+    localStorage.removeItem('jizhangben_username');
+    authToken = '';
+    // 通知服务器注销
+    apiPost('/api/auth/logout').catch(function(){});
+    // 刷新页面回到锁屏
+    location.reload();
+  });
 }
 
 // 修改密码
