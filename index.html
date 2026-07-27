@@ -1169,7 +1169,7 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
 
 <script>
 // ==================== API 封装 ====================
-var authToken = sessionStorage.getItem('jizhangben_token') || '';
+var authToken = localStorage.getItem('jizhangben_token') || '';
 
 function apiHeaders() {
   return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken };
@@ -1279,8 +1279,8 @@ function onPinGo() {
     apiPost('/api/auth/register', { username: username, password: pinInput })
       .then(function(data) {
         authToken = data.token;
-        sessionStorage.setItem('jizhangben_token', authToken);
-        sessionStorage.setItem('jizhangben_username', data.username);
+        localStorage.setItem('jizhangben_token', authToken);
+        localStorage.setItem('jizhangben_username', data.username);
         pinLength = data.pinLength || pinInput.length;
         if (lockResolve) lockResolve();
         if (lockMode === 'reset') { location.reload(); }
@@ -1294,8 +1294,8 @@ function onPinGo() {
     apiPost('/api/auth/login', { username: username, password: pinInput })
       .then(function(data) {
         authToken = data.token;
-        sessionStorage.setItem('jizhangben_token', authToken);
-        sessionStorage.setItem('jizhangben_username', data.username);
+        localStorage.setItem('jizhangben_token', authToken);
+        localStorage.setItem('jizhangben_username', data.username);
         if (lockResolve) lockResolve();
       })
       .catch(function(e) { showPinError(e.message); });
@@ -1389,9 +1389,29 @@ async function loadAllData() {
     journals = results[1] || [];
     userCategories = results[2] || {};
 
+    // 如果服务器数据为空，尝试从本地备份恢复
+    if (records.length === 0 && journals.length === 0 && Object.keys(userCategories).length === 0) {
+      var backupRecords = localStorage.getItem('jizhangben_records');
+      var backupJournals = localStorage.getItem('jizhangben_journals');
+      var backupCats = localStorage.getItem('jizhangben_usercats');
+      if (backupRecords || backupJournals) {
+        try {
+          if (backupRecords) { records = JSON.parse(backupRecords); await apiPut('/api/records', records).catch(function(){}); }
+          if (backupJournals) { journals = JSON.parse(backupJournals); await apiPut('/api/journals', journals).catch(function(){}); }
+          if (backupCats) { userCategories = JSON.parse(backupCats); await apiPut('/api/categories', userCategories).catch(function(){}); }
+          showToast('检测到本地备份，数据已自动恢复~ 💾', 'success');
+        } catch(e) { console.log('恢复备份失败:', e); }
+      }
+    }
+
     // 加载键值数据（非关键，逐个加载，失败不阻塞）
     var budgetV = await apiGet('/api/kv/budget').catch(function(){ return { value: '5000' }; });
     monthlyBudget = parseFloat(budgetV.value) || 5000;
+    // 如果预算为空，尝试从本地恢复
+    if (!budgetV.value && localStorage.getItem('jizhangben_budget')) {
+      monthlyBudget = parseFloat(localStorage.getItem('jizhangben_budget')) || 5000;
+      await apiPut('/api/kv/budget', { value: String(monthlyBudget) }).catch(function(){});
+    }
 
     var darkV = await apiGet('/api/kv/darkmode').catch(function(){ return { value: '0' }; });
     darkModeSetting = darkV.value;
@@ -1539,6 +1559,8 @@ function saveUserCategories(){
   apiPut('/api/categories', userCategories).catch(function(e){
     showToast('保存分类失败！','error');
   });
+  // 本地备份（防止服务器数据丢失）
+  try { localStorage.setItem('jizhangben_usercats', JSON.stringify(userCategories)); } catch(e) {}
 }
 var userCategories = {};
 var categories = {};
@@ -1565,6 +1587,8 @@ function saveRecords(newRecords){
   apiPut('/api/records', records).catch(function(e){
     showToast('保存失败！请检查服务器是否在运行', 'error');
   });
+  // 本地备份（防止服务器数据丢失）
+  try { localStorage.setItem('jizhangben_records', JSON.stringify(records)); } catch(e) {}
 }
 
 function loadJournals(){
@@ -1575,6 +1599,8 @@ function saveJournals(){
   apiPut('/api/journals', journals).catch(function(e){
     showToast('保存手账失败！','error');
   });
+  // 本地备份（防止服务器数据丢失）
+  try { localStorage.setItem('jizhangben_journals', JSON.stringify(journals)); } catch(e) {}
 }
 
 var records = [];
@@ -1620,6 +1646,8 @@ function loadBudget(){
 function saveBudget(v){
   monthlyBudget = parseFloat(v);
   apiPut('/api/kv/budget', { value: String(v) }).catch(function(e){});
+  // 本地备份
+  try { localStorage.setItem('jizhangben_budget', String(v)); } catch(e) {}
 }
 var monthlyBudget = 5000;
 
