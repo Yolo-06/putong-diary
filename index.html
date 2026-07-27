@@ -837,7 +837,10 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
   <!-- ====== 顶部栏 ====== -->
   <div class="header">
     <div style="width:36px;"></div>
-    <span class="header-title">✨ 噗通日记本</span>
+    <div style="text-align:center;">
+      <span class="header-title">✨ 噗通日记本</span>
+      <div id="currentUsername" style="font-size:10px;color:var(--text-muted);margin-top:-2px;"></div>
+    </div>
     <button class="header-btn" onclick="openSettings()" title="设置">⚙️</button>
   </div>
 
@@ -1285,6 +1288,9 @@ function onPinGo() {
         localStorage.setItem('jizhangben_token', authToken);
         localStorage.setItem('jizhangben_username', data.username);
         pinLength = data.pinLength || pinInput.length;
+        // 显示当前用户名
+        var el = document.getElementById('currentUsername');
+        if (el) el.textContent = '👤 ' + data.username;
         if (lockResolve) lockResolve();
         if (lockMode === 'reset') { location.reload(); }
       })
@@ -1300,6 +1306,9 @@ function onPinGo() {
         authToken = data.token;
         localStorage.setItem('jizhangben_token', authToken);
         localStorage.setItem('jizhangben_username', data.username);
+        // 显示当前用户名
+        var el = document.getElementById('currentUsername');
+        if (el) el.textContent = '👤 ' + data.username;
         if (lockResolve) lockResolve();
       })
       .catch(function(e) { showPinError(e.message); });
@@ -1526,6 +1535,10 @@ async function startup() {
   // 5. 显示应用
   document.getElementById('lockScreen').style.display = 'none';
   document.querySelector('.app').style.display = '';
+  // 显示当前用户名
+  var unameDisplay = document.getElementById('currentUsername');
+  var savedUname = localStorage.getItem('jizhangben_username');
+  if (unameDisplay && savedUname) unameDisplay.textContent = '👤 ' + savedUname;
 
   // 6. 初始化
   init();
@@ -2558,9 +2571,8 @@ function exportFullBackup(){
 function doLogout(){
   customConfirm('确定要退出登录吗？退出后需重新输入昵称和密码。', function(ok) {
     if (!ok) return;
-    // 清除登录状态
-    localStorage.removeItem('jizhangben_token');
-    localStorage.removeItem('jizhangben_username');
+    // 彻底清除本地所有数据
+    localStorage.clear();
     authToken = '';
     // 通知服务器注销
     apiPost('/api/auth/logout').catch(function(){});
