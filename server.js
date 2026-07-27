@@ -293,10 +293,17 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
 
 // 重置密码（忘记密码时使用）
 // 云端部署时此接口不需登录，因为忘记密码的人无法登录
-// 数据安全由 Render 的网络隔离层保障
+// 安全防护：频率限制（同一用户名 5 分钟内最多 1 次重置请求）
+var resetRateLimit = {};
 app.post('/api/auth/reset-password', (req, res) => {
   const { username } = req.body;
   if (!username) return res.status(400).json({ error: '请提供用户名' });
+  // 频率限制：防止恶意批量删除
+  var now = Date.now();
+  if (resetRateLimit[username] && now - resetRateLimit[username] < 300000) {
+    return res.status(429).json({ error: '操作太频繁，请5分钟后再试' });
+  }
+  resetRateLimit[username] = now;
   var user = db.get("SELECT id FROM users WHERE username = ?", [username]);
   if (!user) return res.status(400).json({ error: '用户不存在' });
   dbRun("DELETE FROM users WHERE id = ?", [user.id]);

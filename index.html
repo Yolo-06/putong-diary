@@ -1657,7 +1657,8 @@ var catAliases = {
   '💰 收入': '💰 小进账',
   '🔧 其他杂项': '🐱 吞金兽'
 };
-function getCatAlias(cat){ return catAliases[cat]||cat; }
+// 获取分类别名（未匹配时转义自定义名称，防XSS）
+function getCatAlias(cat){ return catAliases[cat]||escapeHtml(cat); }
 
 // 贴纸库
 var stickerOptions = ['🌸','⭐️','🎀','🐾','🍀','🎈','🍰','🌙','💖','🦋'];
