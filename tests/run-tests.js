@@ -1,5 +1,5 @@
 /**
- * 记账本 V3.0 - 自动化测试运行器（SQLite 后端版）
+ * 噗通日记本 V4.1 - 自动化测试运行器（SQLite 后端版）
  * 用法：node tests/run-tests.js
  */
 
@@ -208,26 +208,27 @@ async function main() {
       assertEqual(res.body.plan.dailyAmount, 50);
     });
 
-    // 执行打卡
+    // 执行打卡（使用当月日期，确保查询时能命中当前月份）
+    var todayStr = new Date().toISOString().substring(0,10);
     res = await httpRequest('POST', '/api/savings/checkin', {
-      amount: 50, date: '2026-07-20', recordId: 999
+      amount: 50, date: todayStr, recordId: 999
     }, token);
     testSync('打卡成功', () => { assertEqual(res.body.ok, true); });
 
     // 重复打卡应拒绝
     res = await httpRequest('POST', '/api/savings/checkin', {
-      amount: 50, date: '2026-07-20'
+      amount: 50, date: todayStr
     }, token);
     testSync('重复打卡应拒绝', () => { assertEqual(res.status, 400); });
 
     // 获取当月日志
     res = await httpRequest('GET', '/api/savings/current', null, token);
     testSync('打卡后日志有记录', () => {
-      assertTrue(!!res.body.logs['2026-07-20'], '7月20日应有打卡记录');
+      assertTrue(!!res.body.logs[todayStr], '今日应有打卡记录');
     });
 
     // 撤销打卡
-    res = await httpRequest('DELETE', '/api/savings/checkin/2026-07-20', null, token);
+    res = await httpRequest('DELETE', '/api/savings/checkin/'+todayStr, null, token);
     testSync('撤销打卡成功', () => { assertEqual(res.body.ok, true); });
 
     // ========== Part 3: 权限测试 ==========

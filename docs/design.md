@@ -1,4 +1,4 @@
-# 记账本与手账 V4.0 — 少女治愈系设计文档 🎀
+# 噗通日记本 V4.1 — 少女治愈系设计文档 🎀
 
 ## 0. 数据模型
 
@@ -39,8 +39,12 @@ var userCategories = {...};      // 用户自定义分类
 var userColorOptions = [...];    // 15种可选颜色
 ```
 
-### 0.4 localStorage 键名一览
-| 键名 | 存储内容 | 说明 |
+### 0.4 localStorage 键名一览（V2，已废弃 ⚠️）
+
+> ⚠️ V3.0 起数据已迁移到 SQLite 数据库（`data.db`）。V4.0 起作为本地备份使用，键名加用户名前缀：`{username}_jizhangben_records`。
+> 以下为 V2 时代键名，仅作历史参考。
+
+| 键名（V2旧版） | 存储内容 | 说明 |
 |------|----------|------|
 | `jizhangben_records` | 记账记录数组 | JSON格式 |
 | `jizhangben_journals` | 手账记录数组 | JSON格式 |
@@ -50,6 +54,18 @@ var userColorOptions = [...];    // 15种可选颜色
 | `jizhangben_petimg` | 桌宠自定义图片 | base64 |
 | `jizhangben_stickers` | 盲盒解锁贴纸 | JSON数组 |
 | `jizhangben_checkin_date` | 盲盒签到日期 | "YYYY-MM-DD" |
+
+### 0.5 localStorage 键名一览（V4.0 当前，按用户隔离）
+
+| 键名 | 存储内容 | 说明 |
+|------|----------|------|
+| `jizhangben_token` | 登录Token | 会话凭证 |
+| `jizhangben_username` | 当前用户名 | 登录后记住 |
+| `{username}_jizhangben_records` | 记账记录备份 | 按用户隔离 |
+| `{username}_jizhangben_journals` | 手账记录备份 | 按用户隔离 |
+| `{username}_jizhangben_usercats` | 分类备份 | 按用户隔离 |
+| `{username}_jizhangben_budget` | 预算备份 | 按用户隔离 |
+| `{username}_savings_backup` | 储钱罐备份 | 按用户隔离 |
 
 ### 0.5 静态资源目录 `assets/`
 | 文件 | 说明 |

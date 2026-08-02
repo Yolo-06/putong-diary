@@ -158,7 +158,7 @@
 | ~~POST~~ | ~~`/api/auth/set-password`~~ | ~~首次设置密码~~ → V4 已替换为 `/api/auth/register` | 已废弃 |
 | POST | `/api/auth/login` | 登录验证（V4：增加 username 字段） | V4 更新 |
 | POST | `/api/auth/logout` | 退出登录 | V3 |
-| POST | `/api/auth/reset-password` | 重置账号（V4：需传 username，清空该用户全部数据） | V4 更新 |
+| POST | `/api/auth/reset-password` | 重置账号（V4.1：需传 username + 5分钟限频，429防滥用） | V4 更新 |
 | PUT | `/api/auth/change-password` | 修改密码（V4：按当前登录用户改） | V3 |
 | GET/PUT | `/api/records` | 记账记录读写（V4：按 user_id 隔离） | V4 更新 |
 | GET/PUT | `/api/journals` | 手账记录读写（V4：按 user_id 隔离） | V4 更新 |
