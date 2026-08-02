@@ -706,7 +706,9 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
   background: var(--card); box-shadow: var(--shadow-lg);
   width: 300px; max-width: 90vw;
 }
-.lock-icon { font-size: 56px; margin-bottom: 8px; animation: petFloat 3s ease-in-out infinite; }
+.lock-icon { font-size: 56px; margin-bottom: 8px; animation: petFloat 3s ease-in-out infinite; display: flex; justify-content: center; }
+.lock-icon img { width: 108px; height: 108px; border-radius: 24px; display: block; box-shadow: 0 4px 14px rgba(255,154,162,0.3); }
+.cat-emoji { height: 1.1em; width: 1.1em; vertical-align: -0.15em; margin: 0 1px; object-fit: contain; }
 .lock-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
 .lock-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; min-height: 20px; }
 .pin-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; }
@@ -733,6 +735,14 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
 .pin-keypad .key-go { background: linear-gradient(135deg, var(--pink), #FF9AA2); color: white; font-size: 14px; box-shadow: 0 3px 0 #E88A95; }
 .pin-keypad .key-go:active { box-shadow: 0 0 0 #E88A95; }
 .lock-footer { font-size: 12px; color: var(--text-muted); }
+.lock-tabs { display:flex; gap:8px; justify-content:center; margin-bottom:18px; }
+.lock-tab {
+  flex:1; max-width:120px; padding:9px 0; border:none; border-radius:14px;
+  background:var(--pink-light); color:var(--text-muted); font-size:14px; font-weight:700;
+  cursor:pointer; font-family:inherit; transition:all 0.2s;
+}
+.lock-tab.active { background:linear-gradient(135deg,var(--pink),#FF9AA2); color:#fff; box-shadow:0 3px 10px rgba(255,154,162,0.35); }
+.pin-keypad .key-go.go-ready { transform:scale(1.06); filter:brightness(1.06); }
 @keyframes shake {
   0%,100% { transform: translateX(0); }
   20%,60% { transform: translateX(-6px); }
@@ -809,19 +819,24 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
 <!-- ====== 密码锁屏 ====== -->
 <div id="lockScreen" class="lock-screen">
   <div class="lock-card">
-    <div class="lock-icon">🐱</div>
+    <div class="lock-icon"><img src="assets/black-cat.png" alt="黑猫"></div>
     <h2 class="lock-title">✨ 噗通日记本</h2>
     <p class="lock-sub" id="lockMessage">加载中...</p>
-    <div class="pin-dots" id="pinDots"></div>
-    <div class="pin-error" id="pinError">密码错误，再试一次吧~</div>
-    <!-- 用户名输入 -->
-    <div id="usernameArea" style="margin-bottom:10px;display:none;">
+    <!-- 登录 / 注册 切换 -->
+    <div class="lock-tabs" id="lockTabs">
+      <button class="lock-tab active" id="tabLogin" onclick="switchToLogin()">登录</button>
+      <button class="lock-tab" id="tabRegister" onclick="switchToRegister()">注册</button>
+    </div>
+    <!-- 用户名输入（移到密码上方，符合从上到下的填写顺序） -->
+    <div id="usernameArea" style="margin-bottom:14px;display:none;width:100%;">
       <input type="text" id="lockUsernameInput" placeholder="给自己取个昵称~"
         style="width:200px;padding:10px 14px;border:2px solid var(--pink-light);border-radius:14px;
         text-align:center;font-size:15px;outline:none;background:var(--card);color:var(--text);
         transition:border-color 0.3s;"
         maxlength="20" autocomplete="off">
     </div>
+    <div class="pin-error" id="pinError">密码错误，再试一次吧~</div>
+    <div class="pin-dots" id="pinDots"></div>
     <div class="pin-keypad" id="pinKeypad"></div>
     <div class="lock-footer" id="lockFooter"></div>
     <div class="lock-footer" id="lockReset" style="display:none;margin-top:10px;">
@@ -1221,13 +1236,15 @@ function buildPinKeypad() {
   }
   html += '<button class="key-fn" onclick="onPinBack()">⌫</button>';
   html += '<button onclick="onPinDigit(\'0\')">0</button>';
-  html += '<button class="key-go" id="pinGoBtn" onclick="onPinGo()">→</button>';
+  html += '<button class="key-go" id="pinGoBtn" onclick="onPinGo()">进入</button>';
   document.getElementById('pinKeypad').innerHTML = html;
 }
 
 function updatePinDots(count) {
   var dots = document.querySelectorAll('#pinDots .pin-dot');
   dots.forEach(function(d, i) { d.classList.toggle('filled', i < count); });
+  var go = document.getElementById('pinGoBtn');
+  if (go) go.classList.toggle('go-ready', count >= pinLength);
 }
 
 function showPinError(msg) {
@@ -1239,11 +1256,22 @@ function showPinError(msg) {
   updatePinDots(0);
 }
 
+// 轻提示：仅提示，不抖动、不清空已输密码
+function showPinHint(msg) {
+  var el = document.getElementById('pinError');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(function() { el.style.display = 'none'; }, 1800);
+}
+
 function onPinDigit(d) {
   if (pinInput.length >= pinLength) return;
   pinInput += d;
   updatePinDots(pinInput.length);
   document.getElementById('pinError').style.display = 'none';
+  // 输满 6 位自动提交，省去手动按“进入”
+  if (pinInput.length >= pinLength) {
+    onPinGo();
+  }
 }
 
 function onPinBack() {
@@ -1255,9 +1283,9 @@ function onPinGo() {
   // 先获取用户名
   var usernameInput = document.getElementById('lockUsernameInput');
   var username = usernameInput.value.trim();
-  if (!username) { showPinError('请先给自己取个昵称哦~'); return; }
+  if (!username) { showPinHint('先填一下昵称哦~'); return; }
   if (!/^[a-zA-Z0-9_一-龥]{3,20}$/.test(username)) {
-    showPinError('昵称3-20位，限字母数字中文下划线'); return;
+    showPinHint('昵称3-20位，限字母数字中文下划线'); return;
   }
 
   if (lockMode === 'firstrun') {
@@ -1297,7 +1325,7 @@ function onPinGo() {
       .catch(function(e) { showPinError(e.message); pinConfirm = ''; });
   } else {
     // 登录模式
-    if (pinInput.length < 6) return;
+    if (pinInput.length < 6) { showPinHint('还差 ' + (6 - pinInput.length) + ' 位就够啦~'); return; }
     lockUsername = username;
     justRegistered = false;  // 登录已有账号，允许恢复备份
     document.getElementById('lockMessage').textContent = '正在开门...';
@@ -1323,24 +1351,36 @@ function showFirstRunMode() {
   document.getElementById('usernameArea').style.display = 'block';
   renderPinDots();
   buildPinKeypad();
+  updatePinDots(0);
   document.getElementById('lockMessage').textContent = '设置你的专属密码~';
   document.getElementById('lockFooter').textContent = '💡 取个昵称 + 设置6位数字密码';
   document.getElementById('lockReset').style.display = 'none';
   document.getElementById('lockRegister').style.display = 'none';
+  if (document.getElementById('tabLogin')) document.getElementById('tabLogin').classList.remove('active');
+  if (document.getElementById('tabRegister')) document.getElementById('tabRegister').classList.add('active');
 }
 
 function showLoginMode(givenPinLength) {
   lockMode = 'login';
-  pinInput = '';
+  pinInput = ''; pinConfirm = '';
   pinLength = givenPinLength || 6;
-  document.getElementById('lockUsernameInput').value = '';
+  var savedName = localStorage.getItem('jizhangben_username') || '';
+  document.getElementById('lockUsernameInput').value = savedName;
   document.getElementById('usernameArea').style.display = 'block';
   renderPinDots();
   buildPinKeypad();
-  document.getElementById('lockMessage').textContent = '输入昵称和密码进入你的小世界~';
+  updatePinDots(0);
+  document.getElementById('lockMessage').textContent = savedName ? ('欢迎回来，' + savedName + ' 🐱') : '输入昵称和密码进入你的小世界~';
   document.getElementById('lockFooter').textContent = '🐱 欢迎回来~';
   document.getElementById('lockReset').style.display = 'block';
-  document.getElementById('lockRegister').style.display = 'block';
+  document.getElementById('lockRegister').style.display = 'none';
+  if (document.getElementById('tabLogin')) document.getElementById('tabLogin').classList.add('active');
+  if (document.getElementById('tabRegister')) document.getElementById('tabRegister').classList.remove('active');
+}
+
+// 从注册画面切换回登录画面
+function switchToLogin() {
+  showLoginMode(6);
 }
 
 // 从登录画面切换到注册画面
@@ -3162,6 +3202,42 @@ function deleteCatMajor(catName){
 }
 
 startup();
+
+// 把页面上所有猫咪emoji替换成黑猫图片（同步内容 + 动态渲染）
+(function(){
+  var CAT = '\ud83d\udc31';
+  var SRC = 'assets/black-cat-emoji.png';
+  function replaceCats(root){
+    var w = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT, null, false);
+    var nodes = [], n;
+    while (n = w.nextNode()) {
+      if (n.nodeValue && n.nodeValue.indexOf(CAT) !== -1) nodes.push(n);
+    }
+    nodes.forEach(function(tn){
+      var p = tn.parentNode;
+      var frag = document.createDocumentFragment();
+      var parts = tn.nodeValue.split(CAT);
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i]) frag.appendChild(document.createTextNode(parts[i]));
+        if (i < parts.length - 1) {
+          var img = document.createElement('img');
+          img.src = SRC; img.alt = CAT; img.className = 'cat-emoji';
+          frag.appendChild(img);
+        }
+      }
+      p.replaceChild(frag, tn);
+    });
+  }
+  replaceCats();
+  new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      m.addedNodes.forEach(function(node){
+        if (node.nodeType === 1) replaceCats(node);
+        else if (node.nodeType === 3 && node.parentNode) replaceCats(node.parentNode);
+      });
+    });
+  }).observe(document.body, { childList: true, subtree: true });
+})();
 </script>
 
 </body>

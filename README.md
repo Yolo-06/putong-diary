@@ -65,6 +65,9 @@ node server.js
 ├── server.js          # 后端：Express + SQLite API
 ├── index.html         # 前端：全部界面和逻辑
 ├── package.json       # 依赖配置
+├── assets/            # 静态资源（V4.1 新增）
+│   ├── black-cat.png       # 锁屏页黑猫图标
+│   └── black-cat-emoji.png # 页面内猫咪替图
 ├── docs/              # 详细文档
 │   ├── CLAUDE.md      # 项目说明（给 AI 看的）
 │   ├── 需求.md         # 功能需求清单
@@ -78,7 +81,7 @@ node server.js
 ## 📖 详细文档
 
 - [项目说明](docs/CLAUDE.md) — 技术方案、分类体系、开发规则
-- [需求文档](docs/需求.md) — V2.0 → V4.0 全部功能需求
+- [需求文档](docs/需求.md) — V2.0 → V4.1 全部功能需求
 - [设计规范](docs/design.md) — 颜色、布局、动效、组件设计
 - [命名手册](docs/RENAME.md) — 可爱化命名对照、API 列表、函数索引
 

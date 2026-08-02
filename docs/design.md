@@ -1,4 +1,4 @@
-# 记账本与手账 V2.0 — 少女治愈系设计文档 🎀
+# 记账本与手账 V4.0 — 少女治愈系设计文档 🎀
 
 ## 0. 数据模型
 
@@ -50,6 +50,14 @@ var userColorOptions = [...];    // 15种可选颜色
 | `jizhangben_petimg` | 桌宠自定义图片 | base64 |
 | `jizhangben_stickers` | 盲盒解锁贴纸 | JSON数组 |
 | `jizhangben_checkin_date` | 盲盒签到日期 | "YYYY-MM-DD" |
+
+### 0.5 静态资源目录 `assets/`
+| 文件 | 说明 |
+|------|------|
+| `black-cat.png` | 锁屏页黑猫图标（108×108px，透明背景，圆角24px） |
+| `black-cat-emoji.png` | 页面内猫咪emoji替代图片（`cat-emoji` 样式类） |
+
+> 静态资源通过 `server.js` 的 `express.static('assets')` 托管，路径 `/assets/`。
 
 ---
 
@@ -123,6 +131,26 @@ var userColorOptions = [...];    // 15种可选颜色
 ---
 
 ## 3. 各页面详细设计
+
+### 3.0 锁屏登录页（#lockScreen）— V4.1 重构
+
+**布局（从上到下）**：
+1. **猫咪图标**：`<img src="assets/black-cat.png">` 替代原来的 🐱 emoji，108×108px，圆角24px，粉色光晕阴影，浮动动画
+2. **标题**："✨ 噗通日记本"
+3. **登录/注册切换标签**：`.lock-tabs` 水平并排两个按钮（"登录"/"注册"），选中态粉色渐变高亮
+4. **昵称输入**：200px 宽居中，圆角14px，粉色边框，placeholder "给自己取个昵称~"
+5. **密码红点**：`.pin-dots` 6个圆点，已输入变实心粉色
+6. **数字键盘**：`.pin-keypad` 3×4+1 布局，右下"进入"按钮
+7. **底部辅助**：忘记密码链接 / 注册入口
+
+**交互细节**：
+- **自动提交**：输入满6位密码后自动触发 `onPinGo()`，无需手动按"进入"
+- **进入按钮高亮**：密码输满时按钮放大1.06倍+亮度提升（`.go-ready`），视觉反馈
+- **登录欢迎**：如果localStorage存有上次昵称，登录时显示"欢迎回来，XXX 🐱"
+- **轻提示 vs 错误提示**：
+  - `showPinHint(msg)`：轻提示，显示1.8秒后消失，**不抖动、不清空已输密码**
+  - `showPinError(msg)`：错误提示，密码容器抖动+清空输入
+- **注册/登录切换**：`switchToRegister()` / `switchToLogin()`，tab标签同步高亮
 
 ### 3.1 治愈首页（page-home）
 
@@ -336,6 +364,7 @@ var userColorOptions = [...];    // 15种可选颜色
 | 分类圆糖 | 38×38px 圆形 |
 | 记录图标 | 40×40px 圆角12px |
 | 设置面板 | 宽280px |
+| 锁屏猫咪图标 | 108×108px，圆角24px |
 
 ### 8.2 阴影
 | 属性 | 值 |
@@ -406,6 +435,12 @@ Grid 区域映射:
 - 动画：`toastIn` 从上方滑入+淡入，0.3s
 - 2秒后自动消失（opacity过渡0.3s）
 - z-index: 999，始终在最顶层
+
+### 8.8 猫咪 Emoji 全局替换（V4.1）
+- **触发时机**：页面加载完成 + 动态内容渲染后（`MutationObserver`）
+- **替换目标**：页面文本中所有 🐱 emoji → `<img src="assets/black-cat-emoji.png" class="cat-emoji">`
+- **实现方式**：`TreeWalker` 遍历文本节点，按 🐱 分割后插入图片元素
+- **CSS样式**：`.cat-emoji { height: 1.1em; width: 1.1em; vertical-align: -0.15em; object-fit: contain; }`，使图片与文字行高自然融合
 
 ---
 

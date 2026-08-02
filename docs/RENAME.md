@@ -13,6 +13,7 @@
 | V3.0 | SQLite+密码锁 | 新增后端数据库和密码保护 |
 | V3.1 | 安全加固+许愿储钱罐 | 多设备安全、贴纸插入、自定义分类 |
 | V4.0 | 多用户云端版 | 昵称注册登录、每人独立数据空间、Render 部署 |
+| V4.1 | 黑猫图标+锁屏优化 | 猫咪图标替换、登录注册tab切换、密码自动提交、轻提示 |
 
 ---
 
@@ -87,9 +88,12 @@
 | `#moodDonut` | 心情甜甜圈 | SVG环形图 |
 | `#streakCard` | 连续记账里程碑 | 治愈页底部成就卡片 |
 | `#desktopPet` | 电子桌宠 | 右下角浮动萌宠 |
-| `#lockScreen` | 密码锁屏（V3）→ 昵称+密码锁屏（V4） | 打开 APP 首先看到的画面 |
+| `#lockScreen` | 密码锁屏（V3）→ 昵称+密码锁屏（V4）→图标+tabs版（V4.1） | 打开 APP 首先看到的画面 |
 | `#lockUsernameInput` | 昵称输入框（V4 新增） | 锁屏页用户名输入 |
-| `#lockRegister` | 注册新账号入口（V4 新增） | 登录页底部"没有账号？点此注册" |
+| `#lockRegister` | 注册新账号入口（V4 新增） | 登录页底部"没有账号？点此注册" → V4.1改为tab切换按钮 |
+| `#lockTabs` | 登录/注册切换标签容器（V4.1 新增） | 锁屏页中部两个tab按钮 |
+| `#tabLogin` | 登录tab按钮（V4.1 新增） | 点击切换到登录模式 |
+| `#tabRegister` | 注册tab按钮（V4.1 新增） | 点击切换到注册模式 |
 
 ### 5.3 按钮命名
 | 代码标识 | 可爱文案 | 功能 |
@@ -104,6 +108,8 @@
 | 储钱罐卡片 | 🐷 许愿储钱罐 | 首页打卡进度+草莓日历 |
 | 投币按钮 | 🪙 叮当投币 | 一键完成今日存钱打卡 |
 | 提醒弹窗 | 猫咪催塞钱 | 21:00 未打卡的温馨提醒 |
+| 锁屏"进入"按钮 | 进入（V4.1升级，原"→"） | 密码输满后高亮+自动提交 |
+| 锁屏tab按钮 | 登录 / 注册（V4.1新增） | 粉色渐变高亮切换登录/注册模式 |
 
 ---
 
@@ -122,6 +128,11 @@
 | `sessions` 表 | 登录会话表（V4：加 user_id 列） |
 | `savings_plans` 表 | 储钱计划表（V4：加 user_id 列） |
 | `savings_logs` 表 | 打卡记录表（V4：加 user_id 列） |
+
+### 6.1b 静态文件托管（V4.1 新增）
+- `server.js` 通过 `express.static('assets')` 托管 `assets/` 目录
+- 访问路径：`/assets/black-cat.png`、`/assets/black-cat-emoji.png`
+- 黑猫图标：用户提供的透明背景猫咪图片，用于锁屏和页面emoji替换
 
 ### 6.2 键值存储键名（kv_store，V4：按用户隔离）
 
@@ -182,7 +193,7 @@
 - **页面级**：`page-{name}` — 如 `page-home`、`page-add`
 - **组件级**：`{功能}-{子元素}` — 如 `journal-card`、`record-item`
 - **状态级**：`.active`、`.show`、`.selected`
-- **修饰符**：`-light`（浅色）、`-sm`（小号）、`-xs`（超小号）
+- **修饰符**：`-light`（浅色）、`-sm`（小号）、`-xs`（超小号）、`-ready`（就绪态高亮）
 
 ### 7.2 缩写对照
 | 缩写 | 全称 | 说明 |
@@ -192,10 +203,15 @@
 | `kb-*` | keyboard-* | 软糖键盘（kb-btn、kb-fn、kb-save） |
 | `hs-*` | heal-stat-* | 治愈统计卡片 |
 | `cc-*` | cat-candy-* | 分类圆糖 |
+| `cat-emoji` | — | 猫咪emoji替换图片样式（V4.1 新增，`height:1.1em`行内融合） |
+| `lock-tabs` | — | 锁屏登录/注册切换容器（V4.1 新增） |
+| `lock-tab` | — | 单个切换按钮（V4.1 新增） |
+| `go-ready` | — | 密码输满时"进入"按钮高亮（V4.1 新增，`scale(1.06)`+亮度提升） |
 | `cp-*` | cat-picker-* | 分类选择弹窗 |
 | `qb-*` | quick-btn-* | 快捷按钮 |
 | `pw-*` | photo-wall-* | 照片墙 |
 | `lk-*` | lock-* | 锁屏相关（V3 新增） |
+| `lt-*` | lock-tab-* | 锁屏登录/注册切换标签（V4.1 新增） |
 
 ---
 
@@ -230,6 +246,15 @@
 | `pickCustom*` | 临时自定义分类 | `pickCustomCat()` |
 | `changePet*` | 桌宠换肤 | `changePetSkin()`（V4 更新：弹窗选图替代 JS click） |
 | `add*Major` | 分类管理 | `addCatMajor()`、`editCatMajor()`、`deleteCatMajor()` |
+| `replaceCats` | 猫咪emoji→图片替换（V4.1 新增） | 页面级IIFE，TreeWalker遍历+MutationObserver监听 |
+
+### 8.1b V4.1 新增函数
+| 函数 | 说明 |
+|------|------|
+| `showPinHint(msg)` | 轻提示：仅显示消息，**不抖动不清空**，1.8s自动消失 |
+| `switchToLogin()` | 从注册画面切换回登录画面 |
+| `replaceCats(root)` | 递归替换文本节点中的 🐱 emoji 为 `<img class="cat-emoji">` |
+| (IIFE, 页面底部) | 页面加载后立即执行 `replaceCats()` + 注册 `MutationObserver` 监听动态内容 |
 
 ### 8.2 变量命名模式
 | 变量 | 含义 | 类型 | 版本 |
@@ -261,6 +286,7 @@
 | `todayCheckedIn` | 今天是否已打卡 | boolean | V3.1 |
 | `savingsReminderTime` | 提醒时间 | `'21:00'` | V3.1 |
 | `savingsMonthLogs` | 当月打卡日志 | `{date: {amount, recordId}}` | V3.1 |
+| `lockUsername` | 锁屏页输入的昵称（V4.1 优化：登录时自动填入上次用户名） | string | V4 |
 
 ---
 

@@ -29,3 +29,6 @@ tests/.quality-result.json
 data.db
 data.db-wal
 data.db-shm
+
+# WorkBuddy 项目数据
+.workbuddy/

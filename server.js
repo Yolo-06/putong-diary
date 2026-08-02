@@ -199,6 +199,9 @@ function saveDB() {
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 
+// 托管静态资源（仅暴露 assets 目录，避免 data.db / server.js 被下载）
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+
 // 安全响应头
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
