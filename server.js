@@ -134,6 +134,9 @@ async function initDB() {
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 
+// 静态资源托管（黑猫图标等图片）
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+
 // 安全响应头
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
