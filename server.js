@@ -15,7 +15,8 @@ const path = require('path');
 const { Pool } = require('pg');
 
 const PORT = process.env.PORT || 3456;
-const HOST = process.env.HOST || '127.0.0.1';
+// 云端部署（Render）需要绑定 0.0.0.0 才能被外部访问，本地用 localhost 也能正常访问
+const HOST = process.env.HOST || '0.0.0.0';
 
 // ==================== 数据库连接（Neon PostgreSQL） ====================
 
