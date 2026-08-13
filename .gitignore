@@ -30,5 +30,8 @@ data.db
 data.db-wal
 data.db-shm
 
+# 环境变量（含数据库连接字符串/密码，不提交）
+.env
+
 # WorkBuddy 项目数据
 .workbuddy/

@@ -31,12 +31,18 @@
 # 1. 安装依赖
 npm install
 
-# 2. 启动服务器
+# 2. 配置数据库连接（首次运行需要）
+#    在项目根目录创建 .env 文件，写入：
+#    DATABASE_URL=postgresql://用户名:密码@主机/数据库名?sslmode=require
+
+# 3. 启动服务器
 node server.js
 
-# 3. 打开浏览器
+# 4. 打开浏览器
 # http://localhost:3456
 ```
+
+> 💡 数据库连接字符串可以在 [Neon](https://neon.com) 免费申请，详情见下方「云端部署」。
 
 ### 云端部署
 
@@ -44,7 +50,10 @@ node server.js
 
 👉 **https://putong-diary.onrender.com**
 
-也支持部署到其他支持 Node.js 的云平台，只需设置环境变量 `HOST=0.0.0.0`。
+部署步骤：
+1. 在 [Neon](https://neon.com) 免费创建一个 PostgreSQL 数据库，复制连接字符串
+2. 在 Render 项目的 **Environment** 里添加环境变量 `DATABASE_URL`（值就是上面复制的连接字符串）和 `HOST=0.0.0.0`
+3. 推送代码后点 **Deploy latest commit**
 
 ---
 
@@ -54,7 +63,7 @@ node server.js
 |------|------|
 | 前端 | HTML + CSS + JavaScript（单文件） |
 | 后端 | Node.js + Express |
-| 数据库 | SQLite（sql.js，纯 JS 无需编译） |
+| 数据库 | PostgreSQL（Neon 云端永久存储） |
 | 认证 | bcryptjs 密码哈希 + Token 会话 |
 
 ---
@@ -62,7 +71,7 @@ node server.js
 ## 📁 项目结构
 
 ```
-├── server.js          # 后端：Express + SQLite API
+├── server.js          # 后端：Express + PostgreSQL API
 ├── index.html         # 前端：全部界面和逻辑
 ├── package.json       # 依赖配置
 ├── assets/            # 静态资源（V4.1 新增）

@@ -1,5 +1,5 @@
 /**
- * 噗通日记本 V4.1 - 自动化测试运行器（SQLite 后端版）
+ * 噗通日记本 V4.2 - 自动化测试运行器（PostgreSQL 云端版）
  * 用法：node tests/run-tests.js
  */
 
@@ -70,20 +70,15 @@ function waitForServer(retries) {
 
 // ==================== 主流程 ====================
 async function main() {
-  console.log('\n🧪 记账本 V3.0 自动化测试（SQLite + API）');
+  console.log('\n🧪 噗通日记本 V4.2 自动化测试（PostgreSQL + API）');
   console.log('='.repeat(50));
 
-  // 1. 启动测试服务器
+  // 1. 启动测试服务器（连接 .env 里的云端数据库 DATABASE_URL）
   console.log('\n⚙️  启动测试服务器...');
-  const testDbPath = path.join(__dirname, 'test-data.db');
-  // 清理旧测试数据库
-  try { fs.unlinkSync(testDbPath); } catch(e) {}
-  try { fs.unlinkSync(testDbPath + '-wal'); } catch(e) {}
-  try { fs.unlinkSync(testDbPath + '-shm'); } catch(e) {}
 
   const serverPath = path.join(__dirname, '..', 'server.js');
   const server = spawn('node', [serverPath], {
-    env: { ...process.env, PORT: '3457', DB_PATH: testDbPath },
+    env: { ...process.env, PORT: '3457' },
     stdio: 'pipe'
   });
 
@@ -96,11 +91,11 @@ async function main() {
 
     var testUser = 'tu' + Date.now();
 
-    // 检查初始状态
+    // 检查状态接口能正常响应（云端数据库是共享的，不能断言"无用户"）
     var res = await httpRequest('GET', '/api/auth/status');
-    testSync('初始状态：无任何用户', () => {
-      assertTrue(res.body.hasAnyUser === false || res.body.hasAnyUser === undefined,
-        '新数据库应无用户');
+    testSync('状态接口正常响应', () => {
+      assertTrue(typeof res.body.hasAnyUser === 'boolean',
+        '应返回 hasAnyUser 布尔值');
     });
 
     // 注册
@@ -372,11 +367,8 @@ async function main() {
   } catch(e) {
     console.error('测试异常：' + e.message);
   } finally {
-    // 清理
+    // 清理：关闭测试服务器
     server.kill();
-    try { fs.unlinkSync(testDbPath); } catch(e) {}
-    try { fs.unlinkSync(testDbPath + '-wal'); } catch(e) {}
-    try { fs.unlinkSync(testDbPath + '-shm'); } catch(e) {}
   }
 
   // ========== 报告 ==========
