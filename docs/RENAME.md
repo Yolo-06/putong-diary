@@ -15,6 +15,7 @@
 | V4.0 | 多用户云端版 | 昵称注册登录、每人独立数据空间、Render 部署 |
 | V4.1 | 黑猫图标+锁屏优化 | 猫咪图标替换、登录注册tab切换、密码自动提交、轻提示 |
 | V4.2 | 云端持久化数据库 | SQLite → Neon PostgreSQL，数据永久保存不再丢失 |
+| V4.3 | 功能补全 + PWA | 记账可编辑、备份可导入、小类管理、储钱罐增强（可撤销/可删除/提醒可设）、登录限频、手机桌面PWA |
 
 ---
 
@@ -170,6 +171,7 @@
 | POST | `/api/savings/plan` | 创建或更新储钱计划（V4：按 user_id） | V4 更新 |
 | POST | `/api/savings/checkin` | 执行今日打卡（V4：按 user_id） | V4 更新 |
 | DELETE | `/api/savings/checkin/:date` | 撤销某天打卡（V4：按 user_id） | V4 更新 |
+| DELETE | `/api/savings/plan` | 删除整个储钱罐计划+打卡日志（V4.3 新增，返回关联记账 id 由前端清理） | V4.3 新增 |
 
 ### 6.4 旧 localStorage 键名（V2，已废弃）
 
@@ -248,6 +250,19 @@
 | `changePet*` | 桌宠换肤 | `changePetSkin()`（V4 更新：弹窗选图替代 JS click） |
 | `add*Major` | 分类管理 | `addCatMajor()`、`editCatMajor()`、`deleteCatMajor()` |
 | `replaceCats` | 猫咪emoji→图片替换（V4.1 新增） | 页面级IIFE，TreeWalker遍历+MutationObserver监听 |
+
+### 8.1c V4.3 新增函数
+| 函数 | 说明 |
+|------|------|
+| `apiDelete` | 调用后端 DELETE 接口（撤销打卡、删除储钱罐用） |
+| `editRecord` / `closeRecordEdit` / `saveRecordEdit` | 记账记录编辑弹窗：打开/关闭/保存修改 |
+| `setEditType` / `updateEditTypeUI` / `buildEditCat1` / `onEditCat1Change` | 编辑弹窗内支出/收入切换、分类联动 |
+| `addSubCat` / `deleteSubCat` | 二级分类（小类）添加/删除 |
+| `undoPiggyCheckin` | 撤销今天储钱罐打卡（同时删除对应收入账） |
+| `deletePiggyPlan` | 删除整个储钱罐（计划+打卡+对应收入账） |
+| `openSavingsReminderSettings` / `toggleSavingsReminder` | 储钱罐提醒时间设置 / 提醒开关 |
+| `exportFullBackup`（扩展）/ `importBackup` | 完整备份（新增预算/贴纸/储钱罐等字段）/ 恢复备份 |
+| `showPwaTip` | PWA 安装到手机桌面的步骤说明 |
 
 ### 8.1b V4.1 新增函数
 | 函数 | 说明 |
