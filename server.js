@@ -149,6 +149,14 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// PWA 必需文件（只暴露这两个文件，不托管整个根目录以免泄露 .env）
+app.get('/manifest.json', (req, res) => {
+  res.sendFile(path.join(__dirname, 'manifest.json'));
+});
+app.get('/sw.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'sw.js'));
+});
+
 // ==================== 认证中间件 ====================
 
 async function requireAuth(req, res, next) {
@@ -204,17 +212,40 @@ app.post('/api/auth/register', async (req, res) => {
   res.json({ token, username, pinLength: password.length });
 });
 
+// 登录失败限频：同一用户名连续输错 5 次后锁定 5 分钟，防止暴力试密码
+var loginAttempts = {};
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_LOCK_MS = 5 * 60 * 1000;
+
 // 登录
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: '请输入用户名和密码' });
 
+  // 检查是否处于锁定状态
+  var att = loginAttempts[username];
+  if (att && att.lockUntil && Date.now() < att.lockUntil) {
+    var remainMin = Math.ceil((att.lockUntil - Date.now()) / 60000);
+    return res.status(429).json({ error: '输错太多次啦，请 ' + remainMin + ' 分钟后再试~' });
+  }
+
   var row = await dbGet("SELECT id, password_hash, pin_length FROM users WHERE username = $1", [username]);
   if (!row) return res.status(400).json({ error: '用户不存在，请先注册' });
 
   if (!bcrypt.compareSync(password, row.password_hash)) {
+    // 记录失败次数
+    if (!att) att = loginAttempts[username] = { count: 0, lockUntil: 0 };
+    att.count++;
+    if (att.count >= LOGIN_MAX_FAILS) {
+      att.lockUntil = Date.now() + LOGIN_LOCK_MS;
+      att.count = 0;
+      return res.status(429).json({ error: '输错太多次啦，已锁定 5 分钟，请稍后再试~' });
+    }
     return res.status(401).json({ error: '密码不对哦，再试一次吧~' });
   }
+
+  // 登录成功，清除失败记录
+  delete loginAttempts[username];
 
   var token = crypto.randomBytes(32).toString('hex');
   await dbRun("INSERT INTO sessions (token, user_id, created_at) VALUES ($1,$2,$3)", [token, row.id, new Date().toISOString()]);
@@ -340,11 +371,10 @@ app.get('/api/savings/current', requireAuth, async (req, res) => {
   var plan = await dbGet("SELECT * FROM savings_plans WHERE user_id = $1 AND status = 'active' ORDER BY id DESC LIMIT 1", [req.userId]);
   if (!plan) return res.json({ plan: null, logs: {} });
 
-  var today = new Date();
-  var monthStart = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-01';
-  var monthEnd = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-31';
-  var logsRows = await dbAll("SELECT date, amount, record_id FROM savings_logs WHERE plan_id = $1 AND user_id = $2 AND date >= $3 AND date <= $4 ORDER BY date",
-    [plan.id, req.userId, monthStart, monthEnd]);
+  // 返回该计划的全部分期打卡日志（不只当月），
+  // 这样前端统计\"已存总金额/进度\"跨月后不会缩水
+  var logsRows = await dbAll("SELECT date, amount, record_id FROM savings_logs WHERE plan_id = $1 AND user_id = $2 ORDER BY date",
+    [plan.id, req.userId]);
   var logs = {};
   logsRows.forEach(function(row) { logs[row.date] = { amount: row.amount, recordId: row.record_id ? Number(row.record_id) : null }; });
 
@@ -399,6 +429,21 @@ app.delete('/api/savings/checkin/:date', requireAuth, async (req, res) => {
 
   await dbRun("DELETE FROM savings_logs WHERE plan_id = $1 AND date = $2", [plan.id, req.params.date]);
   res.json({ ok: true });
+});
+
+// 删除储钱罐计划（连同打卡日志），返回打卡自动创建的记账记录 id，由前端一并清理账本
+app.delete('/api/savings/plan', requireAuth, async (req, res) => {
+  var plans = await dbAll("SELECT id FROM savings_plans WHERE user_id = $1", [req.userId]);
+  var removedRecordIds = [];
+  await dbTransaction(async (tx) => {
+    for (var p of plans) {
+      var logs = await tx.all("SELECT record_id FROM savings_logs WHERE plan_id = $1", [p.id]);
+      logs.forEach(function(l){ if (l.record_id) removedRecordIds.push(Number(l.record_id)); });
+      await tx.run("DELETE FROM savings_logs WHERE plan_id = $1", [p.id]);
+      await tx.run("DELETE FROM savings_plans WHERE id = $1", [p.id]);
+    }
+  });
+  res.json({ ok: true, removedRecordIds: removedRecordIds });
 });
 
 // --- 用户分类 ---

@@ -226,6 +226,13 @@ async function main() {
     res = await httpRequest('DELETE', '/api/savings/checkin/'+todayStr, null, token);
     testSync('撤销打卡成功', () => { assertEqual(res.body.ok, true); });
 
+    // 删除储钱罐计划
+    res = await httpRequest('DELETE', '/api/savings/plan', null, token);
+    testSync('删除储钱罐计划成功', () => { assertEqual(res.body.ok, true); });
+
+    res = await httpRequest('GET', '/api/savings/current', null, token);
+    testSync('删除后无计划', () => { assertEqual(res.body.plan, null); });
+
     // ========== Part 3: 权限测试 ==========
     console.log('\n🔒 权限测试');
 

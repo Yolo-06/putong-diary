@@ -41,7 +41,7 @@ var userColorOptions = [...];    // 15种可选颜色
 
 ### 0.4 localStorage 键名一览（V2，已废弃 ⚠️）
 
-> ⚠️ V3.0 起数据已迁移到 SQLite 数据库（`data.db`）。V4.0 起作为本地备份使用，键名加用户名前缀：`{username}_jizhangben_records`。
+> ⚠️ V3.0 起数据曾迁移到 SQLite 数据库（`data.db`）。**V4.2 起数据已改为云端 Neon PostgreSQL 永久存储**（见 `.env` 的 `DATABASE_URL`），根目录 `data.db` 是早期版本遗留文件，可忽略或删除。localStorage 继续作为每用户的本地备份使用，键名加用户名前缀：`{username}_jizhangben_records`。
 > 以下为 V2 时代键名，仅作历史参考。
 
 | 键名（V2旧版） | 存储内容 | 说明 |

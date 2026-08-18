@@ -74,6 +74,7 @@ node server.js
 ├── server.js          # 后端：Express + PostgreSQL API
 ├── index.html         # 前端：全部界面和逻辑
 ├── package.json       # 依赖配置
+├── data.db            # ⚠️ 早期 SQLite 遗留文件（现数据存云端 PostgreSQL，可忽略/删除）
 ├── assets/            # 静态资源（V4.1 新增）
 │   ├── black-cat.png       # 锁屏页黑猫图标
 │   └── black-cat-emoji.png # 页面内猫咪替图

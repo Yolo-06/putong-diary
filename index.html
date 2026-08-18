@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>✨ 噗通日记本</title>
+<meta name="theme-color" content="#FFB7C5">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/assets/icon-192.png">
+<link rel="apple-touch-icon" href="/assets/icon-192.png">
 <style>
 /* ========== 少女治愈系马卡龙色彩 🍭 ========== */
 :root {
@@ -972,7 +976,7 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
         <button class="kb-btn kb-save" style="grid-area:c4" onclick="addRecord()">💖<br>塞进<br>钱包</button>
         <button class="kb-btn" style="grid-area:d1" onclick="kbInput('.')">.</button>
         <button class="kb-btn" style="grid-area:d2" onclick="kbInput('0')">0</button>
-        <button class="kb-btn" style="grid-area:d3" onclick="kbInput('+')">+</button>
+        <button class="kb-btn" style="grid-area:d3" onclick="kbInput('00')">00</button>
       </div>
     </div>
   </div>
@@ -999,14 +1003,6 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
         <button class="btn btn-sm btn-outline" onclick="closeCatInvite()">🙅 先不要</button>
         <button class="btn btn-sm" style="background:var(--pink);color:white;" onclick="closeCatInvite();openJournalEdit(lastSavedRecordId)">📝 去写手账</button>
       </div>
-    </div>
-  </div>
-
-  <!-- ====== 分类选择弹窗 ====== -->
-  <div class="cat-picker-overlay" id="catPickerOverlay" onclick="closeCatPicker(event)">
-    <div class="cat-picker-panel" id="catPickerPanel" onclick="event.stopPropagation()">
-      <div class="cp-title">👛 钱钱花在哪了？</div>
-      <div class="cat-picker-grid" id="catPickerGrid"></div>
     </div>
   </div>
 
@@ -1094,8 +1090,12 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
       <div class="settings-item" onclick="changePassword()">🔐 修改密码 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="doLogout()" style="color:#E08090;">🚪 退出登录 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="setBudget()">💰 变富小预算（当前 <span id="budgetDisplay">¥5000</span>） <span class="si-arrow">▶</span></div>
+      <div class="settings-item" onclick="openSavingsReminderSettings()">🐷 储钱罐提醒时间（当前 <span id="reminderTimeDisplay">21:00</span>） <span class="si-arrow">▶</span></div>
+      <div class="settings-item" onclick="toggleSavingsReminder()">🔔 储钱罐提醒开关 <span id="reminderSwitchDisplay" style="font-size:12px;color:var(--text-muted);">开</span></div>
       <div class="settings-item" onclick="closeSettings();exportCSV(currentListMonth)">📂 魔法数据导出 <span class="si-arrow">▶</span></div>
       <div class="settings-item" onclick="exportFullBackup()">💾 完整备份（含照片） <span class="si-arrow">▶</span></div>
+      <div class="settings-item" onclick="importBackup()">📥 恢复备份 <span class="si-arrow">▶</span></div>
+      <div class="settings-item" onclick="showPwaTip()">📱 安装到手机桌面 <span class="si-arrow">▶</span></div>
       <div class="settings-item" style="border:none;">
         <div style="font-size:12px;color:var(--text-muted);line-height:1.6;padding:10px 0;">
           ⚠️ 数据保存在浏览器中<br>
@@ -1114,6 +1114,44 @@ body.dark-fairy-mode .month-summary { background: rgba(49,38,66,0.7) !important;
     <div class="modal-btns">
       <button class="btn btn-sm btn-outline" onclick="closeDeleteModal()">取消</button>
       <button class="btn btn-sm" style="background:#E08090;color:white;" id="confirmDeleteBtn">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 记账记录编辑弹窗 ====== -->
+<div class="modal-overlay" id="recordEditModal" style="display:none;">
+  <div class="modal-box" style="width:320px;text-align:left;max-height:90vh;overflow-y:auto;">
+    <h3 style="text-align:center;">✏️ 修改记录</h3>
+    <div class="form-group">
+      <label class="form-label">🌸 类型</label>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm" id="editTypeExpense" style="flex:1;background:var(--pink);color:white;" onclick="setEditType('expense')">🌸 支出</button>
+        <button class="btn btn-sm btn-outline" id="editTypeIncome" style="flex:1;" onclick="setEditType('income')">🌟 收入</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">💰 金额</label>
+      <input type="number" step="0.01" min="0.01" class="form-input" id="editAmount">
+    </div>
+    <div class="form-group">
+      <label class="form-label">👛 一级分类</label>
+      <select class="form-select" id="editCat1" onchange="onEditCat1Change()"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">📁 二级分类</label>
+      <select class="form-select" id="editCat2"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">📅 日期</label>
+      <input type="date" class="form-input" id="editDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">📝 备注</label>
+      <input type="text" maxlength="100" class="form-input" id="editNote">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-sm btn-outline" onclick="closeRecordEdit()">取消</button>
+      <button class="btn btn-sm" style="background:var(--pink);color:white;" onclick="saveRecordEdit()">💾 保存修改</button>
     </div>
   </div>
 </div>
@@ -1209,6 +1247,12 @@ async function apiPut(url, data) {
 async function apiPost(url, data) {
   var r = await fetch(url, { method: 'POST', headers: data ? apiHeaders() : { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
   if (!r.ok) { var e = await r.json().catch(function(){ return {}; }); throw new Error(e.error || '操作失败'); }
+  return r.json();
+}
+
+async function apiDelete(url) {
+  var r = await fetch(url, { method: 'DELETE', headers: apiHeaders() });
+  if (!r.ok) { var e = await r.json().catch(function(){ return {}; }); throw new Error(e.error || '删除失败'); }
   return r.json();
 }
 
@@ -1500,6 +1544,9 @@ async function loadAllData() {
     savingsReminderEnabled = remindEnV.value !== '0';
     var lastRemindV = await apiGet('/api/kv/last_savings_remind_date').catch(function(){ return { value: '' }; });
     lastSavingsRemindDate = lastRemindV.value || '';
+    // 设置面板同步显示提醒时间/开关状态
+    var rtd=document.getElementById('reminderTimeDisplay'); if(rtd) rtd.textContent=savingsReminderTime;
+    var rsd=document.getElementById('reminderSwitchDisplay'); if(rsd) rsd.textContent=savingsReminderEnabled?'开':'关';
 
     // 加载储钱罐数据
     await loadSavingsData();
@@ -1766,7 +1813,6 @@ function init(){
   var now=new Date();
   var wd=['日','一','二','三','四','五','六'];
   document.getElementById('dateInput').value=formatDate(now);
-  document.getElementById('cat1Select')&&updateCat2Options('');
   buildCarousel();
   refreshHome();
   refreshListPage();
@@ -1776,6 +1822,16 @@ function init(){
     if(!document.hidden) checkSavingsReminder();
   });
   initPet();
+  // PWA 安装引导（一次性提示，已安装为 App 或已看过就不再提示）
+  try {
+    var isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+    if (!isStandalone && !localStorage.getItem('putong_pwa_tip_shown')) {
+      localStorage.setItem('putong_pwa_tip_shown','1');
+      setTimeout(function(){
+        showToast('📱 浏览器菜单→「添加到主屏幕」，就能像App一样用啦~','success');
+      }, 3500);
+    }
+  } catch(e) {}
   // 初始化设置面板显示
   var bd=document.getElementById('budgetDisplay'); if(bd) bd.textContent='¥'+monthlyBudget;
   var ds=document.getElementById('darkModeStatus'); if(ds&&document.body.classList.contains('dark-fairy-mode')) ds.textContent='开 ✨';
@@ -1884,7 +1940,7 @@ function customAlert(message) {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML = '<div style="background:white;border-radius:24px;padding:28px 24px;text-align:center;width:280px;box-shadow:0 12px 32px rgba(0,0,0,0.2);">'+
     '<div style="font-size:36px;margin-bottom:10px;">😿</div>'+
-    '<p style="font-size:14px;color:var(--text);line-height:1.7;margin:10px 0;">' + escapeHtml(message) + '</p>'+
+    '<p style="font-size:14px;color:var(--text);line-height:1.7;margin:10px 0;">' + escapeHtml(message).replace(/\n/g,'<br>') + '</p>'+
     '<button class="btn btn-sm" style="background:var(--pink);color:white;min-width:80px;margin-top:12px;" id="caOkBtn">知道了</button>'+
     '</div></div>';
   document.body.appendChild(overlay);
@@ -2024,9 +2080,14 @@ function pickMood(el){
 }
 
 // 贴纸选择器（点击插入到文字光标位置）
+// 基础贴纸 + 拆盲盒收集的绝版贴纸一起显示
 function renderStickerPicker(){
+  var all = stickerOptions.slice();
+  (unlockedStickers||[]).forEach(function(s){
+    if(all.indexOf(s)===-1) all.push(s);
+  });
   var html='';
-  stickerOptions.forEach(function(s){
+  all.forEach(function(s){
     html+='<span class="sticker-option" onclick="insertSticker(\''+s+'\')">'+s+'</span>';
   });
   document.getElementById('stickerPicker').innerHTML=html;
@@ -2105,10 +2166,10 @@ function refreshJournalPhotoArea(){
 
 function refreshJournalRelatedOptions(){
   var sel=document.getElementById('journalRelatedRecord');
-  var todayStr=formatDate(new Date());
-  var todayRecords=records.filter(function(r){return r.date===todayStr;});
+  // 列出全部记账记录（最近50条），编辑旧手账时也能关联旧账单
+  var sorted=records.slice().sort(function(a,b){return (b.date.localeCompare(a.date))||(b.id-a.id);}).slice(0,50);
   sel.innerHTML='<option value="">不关联</option>';
-  todayRecords.forEach(function(r){
+  sorted.forEach(function(r){
     sel.innerHTML+='<option value="'+r.id+'">'+escapeHtml(r.cat1)+' · '+escapeHtml(r.cat2)+' ¥'+r.amount.toFixed(2)+'</option>';
   });
 }
@@ -2275,9 +2336,9 @@ function pickCandyCat(el,cat){
 // 软糖键盘
 var kbAmount='';
 function kbInput(ch){
-  if(ch==='+'&&kbAmount){ kbAmount=String(parseFloat(kbAmount||'0')+parseFloat(kbAmount||'0')); }
+  if(ch==='00'){ if(kbAmount==='0'){} else kbAmount+='00'; }
   else if(ch==='.'&&kbAmount.includes('.')) return;
-  else if(ch!=='+'){ if(kbAmount==='0'&&ch!=='.') kbAmount=ch; else kbAmount+=ch; }
+  else { if(kbAmount==='0'&&ch!=='.') kbAmount=ch; else kbAmount+=ch; }
   if(kbAmount.length>12) kbAmount=kbAmount.substring(0,12);
   updateAmountDisplay();
 }
@@ -2451,7 +2512,7 @@ function refreshListPage(){
         if(r.photos&&r.photos.length>0){
           photoThumbs='<div class="record-photos">'+r.photos.slice(0,3).map(function(p){return '<img src="'+p+'">';}).join('')+'</div>';
         }
-        html+='<div class="record-item">'+
+        html+='<div class="record-item" onclick="editRecord('+r.id+')">'+
           '<div class="record-icon" style="background:'+color+'20;color:'+color+'">'+icon+'</div>'+
           '<div class="record-info"><div class="record-cat">'+escapeHtml(r.cat1)+' · '+escapeHtml(r.cat2)+'</div>'+
           (r.note?'<div class="record-note">'+escapeHtml(r.note)+'</div>':'')+photoThumbs+'</div>'+
@@ -2558,6 +2619,113 @@ function drawCharts(){
   document.getElementById('moodChart').innerHTML=moodHtml;
 }
 
+// ==================== 编辑记账记录 ====================
+
+var editingRecordId = null;
+var editRecordType = 'expense';
+
+function editRecord(id){
+  var r=records.find(function(x){return x.id===id;});
+  if(!r) return;
+  editingRecordId=id;
+  editRecordType=(r.type==='income')?'income':'expense';
+  document.getElementById('editAmount').value=r.amount;
+  document.getElementById('editDate').value=r.date;
+  document.getElementById('editNote').value=r.note||'';
+  updateEditTypeUI();
+  buildEditCat1(r.cat1);
+  // 二级分类：分类里有就选中原值，没有（临时分类）则保留原值作为选项
+  var c2=document.getElementById('editCat2');
+  var subs=categories[r.cat1]||[];
+  if(subs.length>0){
+    c2.innerHTML='';
+    subs.forEach(function(s){ c2.innerHTML+='<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; });
+    c2.value=r.cat2;
+  }
+  if(c2.value!==r.cat2){
+    c2.innerHTML='<option value="'+escapeHtml(r.cat2)+'">'+escapeHtml(r.cat2)+'</option>'+c2.innerHTML;
+    c2.value=r.cat2;
+  }
+  document.getElementById('recordEditModal').style.display='flex';
+}
+
+function closeRecordEdit(){
+  editingRecordId=null;
+  document.getElementById('recordEditModal').style.display='none';
+}
+
+function setEditType(t){
+  editRecordType=t;
+  updateEditTypeUI();
+  buildEditCat1('');
+}
+
+function updateEditTypeUI(){
+  var ex=document.getElementById('editTypeExpense'), ic=document.getElementById('editTypeIncome');
+  if(editRecordType==='income'){
+    ex.className='btn btn-sm btn-outline'; ex.style.cssText='flex:1;';
+    ic.className='btn btn-sm'; ic.style.cssText='flex:1;background:var(--pink);color:white;';
+  } else {
+    ex.className='btn btn-sm'; ex.style.cssText='flex:1;background:var(--pink);color:white;';
+    ic.className='btn btn-sm btn-outline'; ic.style.cssText='flex:1;';
+  }
+}
+
+function buildEditCat1(keepCat){
+  var sel=document.getElementById('editCat1');
+  sel.innerHTML='';
+  Object.keys(categories).forEach(function(cat){
+    if(editRecordType==='expense'&&cat==='💰 收入') return;
+    if(editRecordType==='income'&&cat!=='💰 收入') return;
+    sel.innerHTML+='<option value="'+escapeHtml(cat)+'">'+getCatAlias(cat)+'</option>';
+  });
+  if(keepCat){
+    sel.value=keepCat;
+    if(sel.value!==keepCat){
+      sel.innerHTML='<option value="'+escapeHtml(keepCat)+'">'+escapeHtml(keepCat)+'</option>'+sel.innerHTML;
+      sel.value=keepCat;
+    }
+  }
+  onEditCat1Change();
+}
+
+function onEditCat1Change(){
+  var cat=document.getElementById('editCat1').value;
+  var c2=document.getElementById('editCat2');
+  c2.innerHTML='';
+  if(cat&&categories[cat]&&categories[cat].length>0){
+    categories[cat].forEach(function(s){ c2.innerHTML+='<option value="'+escapeHtml(s)+'">'+escapeHtml(s)+'</option>'; });
+  } else {
+    c2.innerHTML='<option value="">请先选择一级分类</option>';
+  }
+}
+
+function saveRecordEdit(){
+  if(editingRecordId===null) return;
+  var amount=parseFloat(document.getElementById('editAmount').value);
+  var cat1=document.getElementById('editCat1').value;
+  var cat2=document.getElementById('editCat2').value;
+  var date=document.getElementById('editDate').value;
+  var note=document.getElementById('editNote').value.trim();
+  if(!amount||isNaN(amount)||amount<=0){showToast('请输入正确的金额','error');return;}
+  if(amount>99999999.99){showToast('金额不能超过 99,999,999.99 元','error');return;}
+  if(!cat1){showToast('请选择一级分类','error');return;}
+  if(!cat2){showToast('请选择二级分类','error');return;}
+  if(!date){showToast('请选择日期','error');return;}
+  var idx=records.findIndex(function(x){return x.id===editingRecordId;});
+  if(idx<0){closeRecordEdit();return;}
+  records[idx].amount=Math.round(amount*100)/100;
+  records[idx].cat1=cat1;
+  records[idx].cat2=cat2;
+  records[idx].date=date;
+  records[idx].note=note;
+  records[idx].type=editRecordType;
+  saveRecords(records);
+  closeRecordEdit();
+  refreshHome(); refreshListPage();
+  showToast('记录已修改 ✨','success');
+}
+
 // ==================== 删除功能 ====================
 
 function confirmDelete(id){
@@ -2570,7 +2738,7 @@ function closeDeleteModal(){
   deleteTargetId=null; document.getElementById('deleteModal').style.display='none';
 }
 document.getElementById('deleteModal').addEventListener('click',function(e){if(e.target===this)closeDeleteModal();});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeDeleteModal();closeJournalEdit();closeSettings();closeJournalDetail();closeCatPicker();}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeDeleteModal();closeJournalEdit();closeSettings();closeJournalDetail();closeRecordEdit();}});
 document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
   if(deleteTargetId){
     records=records.filter(function(r){return r.id!==deleteTargetId;});
@@ -2600,12 +2768,96 @@ function exportCSV(monthStr){
 }
 
 function exportFullBackup(){
-  var data={records:records,journals:journals,userCategories:userCategories,exportTime:new Date().toISOString()};
+  var data={
+    records:records,
+    journals:journals,
+    userCategories:userCategories,
+    budget:monthlyBudget,
+    darkmode:darkModeSetting,
+    stickers:JSON.stringify(unlockedStickers||[]),
+    checkin_date:lastCheckinDate||'',
+    pet_img:petImg||'',
+    savings:{ plan:currentSavingsPlan, logs:savingsMonthLogs||{} },
+    savingsReminderTime:savingsReminderTime||'21:00',
+    savingsReminderEnabled:savingsReminderEnabled!==false,
+    username:localStorage.getItem('jizhangben_username')||'',
+    exportTime:new Date().toISOString()
+  };
   var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob); var a=document.createElement('a');
   a.href=url; a.download='记账本_完整备份_'+formatDate(new Date())+'.json';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-  showToast('完整备份已导出（含照片和手账）','success');
+  showToast('完整备份已导出（含照片、手账、储钱罐、预算等）','success');
+}
+
+// 恢复备份（导入完整备份 JSON 文件）
+function importBackup(){
+  var input=document.createElement('input');
+  input.type='file'; input.accept='.json,application/json'; input.style.display='none';
+  input.onchange=function(){
+    var file=input.files[0]; if(!file) return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var data;
+      try { data=JSON.parse(e.target.result); }
+      catch(err){ showToast('备份文件解析失败，请确认选的是备份文件','error'); return; }
+      if(!data||!Array.isArray(data.records)||!Array.isArray(data.journals)){
+        showToast('这不是有效的备份文件哦~','error'); return;
+      }
+      customConfirm('恢复备份会【覆盖】当前账号的所有数据，确定继续吗？', function(ok){
+        if(!ok) return;
+        // 恢复记账记录和手账
+        records=data.records.slice(); saveRecords(records);
+        journals=data.journals.slice(); saveJournals();
+        // 恢复分类
+        if(data.userCategories&&typeof data.userCategories==='object'){ userCategories=data.userCategories; saveUserCategories(); }
+        rebuildCategories();
+        // 恢复预算
+        if(data.budget){ monthlyBudget=parseFloat(data.budget)||5000; saveBudget(monthlyBudget); }
+        // 恢复暗黑模式
+        if(data.darkmode!==undefined){
+          darkModeSetting=String(data.darkmode);
+          apiPut('/api/kv/darkmode',{value:darkModeSetting}).catch(function(){});
+          document.body.classList.toggle('dark-fairy-mode',darkModeSetting==='1');
+          var ds=document.getElementById('darkModeStatus'); if(ds) ds.textContent=darkModeSetting==='1'?'开 ✨':'关';
+        }
+        // 恢复贴纸和签到
+        if(data.stickers!==undefined){ try{ unlockedStickers=JSON.parse(data.stickers); }catch(err){ unlockedStickers=[]; } apiPut('/api/kv/stickers',{value:data.stickers}).catch(function(){}); }
+        if(data.checkin_date){ lastCheckinDate=data.checkin_date; apiPut('/api/kv/checkin_date',{value:data.checkin_date}).catch(function(){}); }
+        // 恢复桌宠皮肤
+        if(data.pet_img){ petImg=data.pet_img; apiPut('/api/kv/pet_img',{value:data.pet_img}).catch(function(){}); updatePetDisplay(); }
+        // 恢复储钱罐提醒设置
+        if(data.savingsReminderTime){ savingsReminderTime=data.savingsReminderTime; apiPut('/api/kv/savings_reminder_time',{value:savingsReminderTime}).catch(function(){}); }
+        if(data.savingsReminderEnabled!==undefined){ savingsReminderEnabled=!!data.savingsReminderEnabled; apiPut('/api/kv/savings_reminder_enabled',{value:savingsReminderEnabled?'1':'0'}).catch(function(){}); }
+        // 恢复储钱罐计划与打卡记录
+        if(data.savings&&data.savings.plan){
+          apiPost('/api/savings/plan',{title:data.savings.plan.title,targetAmount:data.savings.plan.targetAmount,dailyAmount:data.savings.plan.dailyAmount,startDate:data.savings.plan.startDate||new Date().toISOString().substring(0,10)})
+            .then(function(){
+              var logs=data.savings.logs||{};
+              var chain=Promise.resolve();
+              Object.keys(logs).forEach(function(d){
+                chain=chain.then(function(){
+                  return apiPost('/api/savings/checkin',{amount:logs[d].amount||data.savings.plan.dailyAmount,date:d,recordId:logs[d].recordId||null}).catch(function(){});
+                });
+              });
+              return chain;
+            })
+            .then(function(){ return loadSavingsData(); })
+            .catch(function(){});
+        }
+        // 刷新界面
+        refreshHome(); refreshListPage(); refreshHealPage();
+        var bd=document.getElementById('budgetDisplay'); if(bd) bd.textContent='¥'+monthlyBudget;
+        var rt=document.getElementById('reminderTimeDisplay'); if(rt) rt.textContent=savingsReminderTime;
+        var rs=document.getElementById('reminderSwitchDisplay'); if(rs) rs.textContent=savingsReminderEnabled?'开':'关';
+        showToast('备份恢复成功！🎉','success');
+      });
+    };
+    reader.readAsText(file);
+  };
+  document.body.appendChild(input);
+  input.click();
+  setTimeout(function(){ input.remove(); },1000);
 }
 
 // 退出登录
@@ -2840,7 +3092,10 @@ function renderPiggyCard() {
   html += '<div class="piggy-icon">🐷</div>';
   html += '<div><div class="piggy-title">'+escapeHtml(plan.title)+'</div>';
   html += '<div class="piggy-sub">目标 ¥'+plan.targetAmount.toFixed(0)+' · 每天存 ¥'+plan.dailyAmount.toFixed(0)+'</div></div>';
-  html += '<div style="margin-left:auto;font-size:11px;color:var(--text-muted);cursor:pointer;" onclick="event.stopPropagation();openPiggySetup()">✏️</div>';
+  html += '<div style="margin-left:auto;display:flex;gap:10px;font-size:12px;">';
+  html += '<span style="cursor:pointer;color:var(--text-muted);" onclick="event.stopPropagation();openPiggySetup()" title="修改计划">✏️</span>';
+  html += '<span style="cursor:pointer;color:#E08090;" onclick="event.stopPropagation();deletePiggyPlan()" title="删除存钱罐">🗑</span>';
+  html += '</div>';
   html += '</div>';
 
   // 进度条
@@ -2855,9 +3110,9 @@ function renderPiggyCard() {
   html += '<div><div class="pa-val">¥'+plan.dailyAmount.toFixed(0)+'</div><div class="pa-label">每日目标</div></div>';
   html += '</div>';
 
-  // 打卡按钮
+  // 打卡按钮（已打卡时可点按撤销）
   if (todayCheckedIn) {
-    html += '<button class="piggy-checkin-btn done">✅ 今天已投币</button>';
+    html += '<button class="piggy-checkin-btn done" onclick="event.stopPropagation();undoPiggyCheckin()" title="点按可撤销今天的打卡">✅ 今天已投币（点按撤销）</button>';
   } else {
     html += '<button class="piggy-checkin-btn" onclick="event.stopPropagation();doPiggyCheckin()">🪙 叮当投币</button>';
   }
@@ -2993,6 +3248,65 @@ function doPiggyCheckin() {
     .catch(function(e) {
       showToast(e.message || '打卡失败','error');
     });
+}
+
+// 撤销今天的打卡（同时删除打卡自动创建的记账记录）
+function undoPiggyCheckin(){
+  if (!todayCheckedIn) return;
+  var today = new Date().toISOString().substring(0,10);
+  var log = savingsMonthLogs[today];
+  customConfirm('确定要撤销今天的打卡吗？对应的记账记录也会一起删除。', function(ok) {
+    if (!ok) return;
+    apiDelete('/api/savings/checkin/' + today)
+      .then(function() {
+        // 删除打卡自动创建的记账记录
+        if (log && log.recordId) {
+          records = records.filter(function(r){ return r.id !== log.recordId; });
+          saveRecords(records);
+        }
+        delete savingsMonthLogs[today];
+        todayCheckedIn = false;
+        renderPiggyCard();
+        refreshHome(); refreshListPage();
+        showToast('已撤销今天的打卡 💤','success');
+      })
+      .catch(function(e) {
+        showToast(e.message || '撤销失败','error');
+      });
+  });
+}
+
+// 删除整个储钱罐（连同打卡记录和打卡自动记的收入账）
+function deletePiggyPlan(){
+  if (!currentSavingsPlan) return;
+  customConfirm('确定要删除「'+currentSavingsPlan.title+'」存钱罐吗？打卡记录和打卡自动记的收入账会一起删除，且无法恢复哦~', function(ok) {
+    if (!ok) return;
+    // 先收集所有打卡自动创建的记账记录 id
+    var recordIds = [];
+    for (var d in savingsMonthLogs) {
+      if (savingsMonthLogs[d] && savingsMonthLogs[d].recordId) recordIds.push(savingsMonthLogs[d].recordId);
+    }
+    apiDelete('/api/savings/plan')
+      .then(function() {
+        // 从账本里删掉对应的收入记录
+        if (recordIds.length > 0) {
+          records = records.filter(function(r){ return recordIds.indexOf(r.id) === -1; });
+          saveRecords(records);
+        }
+        currentSavingsPlan = null;
+        savingsMonthLogs = {};
+        todayCheckedIn = false;
+        // 清空本地备份
+        var uname = localStorage.getItem('jizhangben_username') || 'user';
+        try { localStorage.removeItem(uname + '_savings_backup'); } catch(e) {}
+        renderPiggyCard();
+        refreshHome(); refreshListPage();
+        showToast('存钱罐已删除 💔 期待新的小目标~','success');
+      })
+      .catch(function(e) {
+        showToast(e.message || '删除失败','error');
+      });
+  });
 }
 
 function spawnCoinDropAnim() {
@@ -3149,6 +3463,39 @@ function openSettings(){ document.getElementById('settingsOverlay').classList.ad
 function closeSettings(){ document.getElementById('settingsOverlay').classList.remove('show'); document.getElementById('settingsPanel').classList.remove('show'); }
 document.getElementById('settingsOverlay').addEventListener('click',closeSettings);
 
+// ==================== 储钱罐提醒设置 ====================
+
+function openSavingsReminderSettings(){
+  customPrompt('每天提醒打卡的时间（24小时制，如 21:00）：', 'HH:MM', savingsReminderTime, 'text', function(v) {
+    if(!v) return;
+    v=v.trim();
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(v)){showToast('时间格式不对，用 21:00 这种格式哦~','error');return;}
+    savingsReminderTime=v;
+    apiPut('/api/kv/savings_reminder_time',{value:v}).catch(function(){});
+    var el=document.getElementById('reminderTimeDisplay'); if(el) el.textContent=v;
+    showToast('提醒时间已设为 '+v+' 🐷','success');
+  });
+}
+
+function toggleSavingsReminder(){
+  savingsReminderEnabled=!savingsReminderEnabled;
+  apiPut('/api/kv/savings_reminder_enabled',{value:savingsReminderEnabled?'1':'0'}).catch(function(){});
+  var el=document.getElementById('reminderSwitchDisplay');
+  if(el) el.textContent=savingsReminderEnabled?'开':'关';
+  showToast(savingsReminderEnabled?'储钱罐提醒已开启 🔔':'储钱罐提醒已关闭 💤','success');
+}
+
+// ==================== PWA：安装到手机桌面 ====================
+
+function showPwaTip(){
+  customAlert('📱 手机安装步骤：\n1. 用手机浏览器（Chrome）打开本应用网址\n2. 点浏览器右上角 ⋮ 菜单\n3. 选「添加到主屏幕」或「安装应用」\n4. 手机桌面就会出现噗通日记本图标，点开就像 App 一样全屏使用啦~');
+}
+
+// 注册 Service Worker（提供离线外壳 + 安装能力）
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(){});
+}
+
 // ==================== 分类管理（在设置面板中） ====================
 
 function showSettingsCatManage(){
@@ -3159,12 +3506,49 @@ function showSettingsCatManage(){
     html+='<div style="padding:10px 0;border-bottom:1px solid var(--border);">'+
       '<div style="display:flex;align-items:center;gap:8px;font-weight:600;">'+(isPreset?'🔒 ':'')+escapeHtml(catName)+' ('+categories[catName].length+'个小类)'+
       (!isPreset?'<button class="btn btn-sm btn-outline" style="margin-left:auto;font-size:11px;" onclick="editCatMajor(\''+escapeHtml(catName)+'\')">✏️</button><button class="btn btn-sm" style="background:#E08090;color:white;font-size:11px;" onclick="deleteCatMajor(\''+escapeHtml(catName)+'\')">🗑</button>':'')+
-      '</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">'+categories[catName].map(function(s){return escapeHtml(s);}).join('、')+'</div></div>';
+      '</div>'+
+      // 小类列表：自定义小类可删（预设内置小类带🔒不可删，删除入口在记录里不影响历史数据）
+      '<div style="margin-top:6px;">'+categories[catName].map(function(s){
+        var canDel = userCategories[catName] && userCategories[catName].subs.indexOf(s)!==-1;
+        return '<span style="display:inline-flex;align-items:center;gap:3px;background:var(--pink-light);color:#C06070;border-radius:12px;padding:2px 8px;font-size:11px;margin:2px 4px 2px 0;">'+escapeHtml(s)+
+          (canDel?'<span style="cursor:pointer;font-weight:700;padding:0 2px;" onclick="deleteSubCat(\''+escapeHtml(catName)+'\',\''+escapeHtml(s)+'\')" title="删除小类">✕</span>':'')+
+          '</span>';
+      }).join('')+'</div>'+
+      '<button class="btn btn-sm btn-outline" style="font-size:11px;margin-top:6px;" onclick="addSubCat(\''+escapeHtml(catName)+'\')">➕ 添加小类</button>'+
+      '</div>';
   });
   html+='</div><button class="btn btn-primary" style="margin-top:10px;" onclick="addCatMajor()">+ 新增大类</button>';
   html+='<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-sm btn-outline" style="flex:1;" onclick="closeCatModal()">关闭</button></div>';
   document.getElementById('catModalBox').innerHTML=html;
   document.getElementById('catModal').style.display='flex';
+}
+
+// 添加二级分类（小类）
+function addSubCat(catName){
+  customPrompt('给「'+catName+'」添加一个小类：', '如：下午茶、宠物零食', '', 'text', function(sub) {
+    if(!sub) return;
+    sub=sub.trim();
+    if(!sub){return;}
+    if(categories[catName].indexOf(sub)!==-1){showToast('这个小类已存在','error');return;}
+    if(!userCategories[catName]){
+      userCategories[catName]={subs:[],color:catColors[catName]||presetCatColors[catName]||'#6366F1'};
+    }
+    userCategories[catName].subs.push(sub);
+    saveUserCategories(); userCategories=loadUserCategories(); rebuildCategories();
+    showSettingsCatManage(); showToast('小类「'+sub+'」已添加','success');
+  });
+}
+
+// 删除二级分类（小类）
+function deleteSubCat(catName, sub){
+  customConfirm('确定要删除小类「'+sub+'」吗？已有记录不会被删除。', function(ok) {
+    if(!ok) return;
+    if(userCategories[catName]&&userCategories[catName].subs){
+      userCategories[catName].subs=userCategories[catName].subs.filter(function(s){return s!==sub;});
+      saveUserCategories(); userCategories=loadUserCategories(); rebuildCategories();
+      showSettingsCatManage(); showToast('小类已删除','success');
+    }
+  });
 }
 
 function closeCatModal(){ document.getElementById('catModal').style.display='none'; }
